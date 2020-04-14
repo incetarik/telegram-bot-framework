@@ -1,0 +1,37 @@
+{
+  "name": "telegram-bot-framework",
+  "version": "1.0.0",
+  "description": "A bot framework for Telegram utilizing Telegraf library.",
+  "main": "index.js",
+  "scripts": {
+    "test": "jest",
+    "prepublish": "tsc"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/incetarik/telegram-bot-framework"
+  },
+  "keywords": [
+    "telegram",
+    "bot"
+  ],
+  "bugs": {
+    "url": "https://github.com/incetarik/telegram-bot-framework/issues"
+  },
+  "homepage": "https://github.com/incetarik/telegram-bot-framework#readme",
+  "author": "Tarık İnce <incetarik@hotmail.com>",
+  "license": "SEE LICENSE IN LICENSE",
+  "dependencies": {
+    "telegraf": "3.37.0",
+    "telegraf-inline-menu": "4.0.0",
+    "telegraf-keyboard": "1.1.2",
+    "dotenv": "8.2.0",
+    "rxjs": "6.5.5"
+  },
+  "devDependencies": {
+    "typescript": "3.8.3",
+    "@types/node": "12.12.2",
+    "@types/dotenv": "8.2.0"
+  },
+  "types": "dist/index.d.ts"
+}
