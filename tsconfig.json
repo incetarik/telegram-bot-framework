@@ -5,8 +5,7 @@
     "outDir": "dist",
     "pretty": true,
     "rootDir": ".",
-    "watch": true,
-    "incremental": true,
+    "watch": false,
     "sourceMap": true,
     "target": "es2017",
     "allowSyntheticDefaultImports": true,
@@ -20,5 +19,9 @@
       "ES2017"
     ],
     "declaration": true
-  }
+  },
+  "exclude": [
+    "node_modules",
+    "dist"
+  ]
 }

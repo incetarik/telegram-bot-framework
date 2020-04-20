@@ -2,7 +2,7 @@
   "name": "telegram-bot-framework",
   "version": "1.0.0",
   "description": "A bot framework for Telegram utilizing Telegraf library.",
-  "main": "index.js",
+  "main": "dist/index.js",
   "scripts": {
     "test": "jest",
     "prepublish": "tsc"
