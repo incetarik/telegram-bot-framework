@@ -1,5 +1,6 @@
 bots/
 .vscode/
+package-lock.json
 *.lock
 # Logs
 logs
