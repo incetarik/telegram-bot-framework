@@ -189,6 +189,177 @@ starts the bot.
 - You can always make a pull request to improve the library!
 
 
+## Examples
+A hello world bot would be like this
+```js
+@bot()
+class SayHiBot {
+  @command()
+  async * sayHi() {
+    yield { message: 'Hello 👋' }
+  }
+}
+
+const bot = new SayHiBot()
+bot.start()
+```
+
+---
+A bot multiplying a number and reverses a string would be like
+```js
+@bot()
+class OpBot {
+  @command()
+  async * multiply() {
+    const firstNumStr = yield {
+      input: 'Please enter the first number',
+      match: /\d+/,
+      matchError: 'Invalid number'
+    }
+
+    const firstNum = parseInt(firstNumStr, 10)
+
+    const secondNumStr = yield {
+      input: 'Please enter a digit to multiply',
+      match: /[1-9]/,
+      matchError: 'Please enter a digit between 1-9'
+    }
+
+    const secondNum = parseInt(secondNumStr, 10)
+    const result = firstNum * secondNum
+    yield {
+      message: `Result is ${result}`
+    }
+  }
+
+  @command({ name: 'reverse' })
+  async * reverseaString() {
+    let message = yield {
+      input: 'Enter a message to reverse',
+    }
+
+    message = message.split('').reverse().join('')
+    yield { message }
+  }
+}
+```
+
+---
+An advanced bot supports pagination. The following example is the one of the
+extreme cases you may face with. Here, we have a video downloader bot which
+looks through the pages from its source and returns us an object containing
+the names of the videos as string array and the total number of pages and
+the current page number.
+
+In this example, the bot is editing the last message it sent so the bot will
+not be sending many messages since they are similar to each other but instead
+will update the last sent message so you will have a pagination-like message
+with three buttons under of it and you also provide functions for them in the
+class with `@action()`. Likewise, you are hiding the previous and the next
+buttons according to the current page index. When cancelled, the cleanup is
+done.
+
+Note that the next condition after the value is returned from the observable,
+it is checking whether the returned value is a cancel symbol or not. Because
+the `input$()` takes an object describing that the previous message will be
+cancelled (`cancelPrevious`) and client may send messages until it `match`-es
+with the condition and if the client fails for 3 times, the operation is
+cancelled (returned false, so the second condition will end the execution).
+
+Also note that the `/search` command has a timeout of 5 seconds and whenever
+it is sent again by the user, it invalidates and resets the previous states
+of given list.
+
+```ts
+@bot()
+class VideoDownloaderBot {
+  @state() _messageToEdit?: Message
+  @state() pageIndex: number = 0
+  @state() downloader = new VideoDownloader()
+  @state() isSearching = false
+  @state() searchQuery?: string
+
+  private doSearch(text?: string) {
+    if (this.isSearching) { return }
+    text = text || this.searchQuery
+
+    this.isSearching = true
+    this.downloader.search$(text, { pageIndex: this.pageIndex }).subscribe(async value => {
+      this.isSearching = false
+      const { lines } = value
+      const selection = await this.input$({
+        input: `Page: ${value.pageNumber}\n${lines.join('\n')}`,
+        match: /^(next|prev|cancel|\d\d?)$/i,
+        matchError: 'Invalid Input',
+        extra: Extra.markup(Markup.inlineKeyboard([
+          { text: '⬅️', callback_data: 'didPrevClick', hide: this.pageIndex === 1 },
+          { text: '❌', callback_data: 'didCancelClick', hide: false },
+          { text: '➡️', callback_data: 'didNextClick', hide: this.pageIndex === value.pageCount - 1 },
+        ])),
+        edit: this._messageToEdit,
+        cancelPrevious: true,
+        retry: 3,
+        didMessageSend: async (message) => { this._messageToEdit = message }
+      })
+
+      if (this.isCancelled(selection)) {
+        return
+      }
+
+      if (!selection) {
+        await this.message$('Operation is cancelled')
+        return
+      }
+    })
+  }
+
+  @command({ timeout: 5000, resetStates: [ 'searchQuery', 'pageIndex', 'isSearching', '_messageToEdit' ] })
+  async * search() {
+    if (this.isSearching) { return }
+    this.isSearching = false
+    this.pageIndex = 1
+
+    const text = yield {
+      input: 'What are you looking for?',
+      match: /\w.{2,}/,
+      matchError: 'Invalid inut'
+    }
+
+    this.searchQuery = text
+
+    yield { message: 'Searching…' }
+    await this.doSearch(text)
+  }
+
+  @action()
+  async didPrevClick() {
+    --this.searchIndex
+    await this.doSearch()
+  }
+
+  @action()
+  async didNextClick() {
+    ++this.searchIndex
+    await this.doSearch()
+  }
+
+  @action({ emitsEvent: false })
+  async didCancelClick() {
+    await this.message$('Operation is cancelled')
+    if (this._messageToUpdate) {
+      await this.context.deleteMessage(this._messageToUpdate!.message_id)
+    }
+
+    this.cancelInput()
+
+    this.pageIndex = 1
+    this.searchQuery = undefined
+    this._messageToUpdate = undefined
+    this.isSearching = false
+  }
+}
+```
+
 If you want to support to the project:
 
 ```md
