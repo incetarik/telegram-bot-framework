@@ -1,6 +1,6 @@
 {
-  "name": "telegram-bot-framework",
-  "version": "1.0.0",
+  "name": "@incetarik/telegram-bot-framework",
+  "version": "1.0.2",
   "description": "A bot framework for Telegram utilizing Telegraf library.",
   "main": "dist/index.js",
   "scripts": {
@@ -21,6 +21,9 @@
   "homepage": "https://github.com/incetarik/telegram-bot-framework#readme",
   "author": "Tarık İnce <incetarik@hotmail.com>",
   "license": "SEE LICENSE IN LICENSE",
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com/"
+  },
   "dependencies": {
     "telegraf": "3.37.0",
     "telegraf-inline-menu": "4.0.0",

@@ -4,7 +4,7 @@ import {
   ExtraEditMessage, IncomingMessage, Message
 } from 'telegraf/typings/telegram-types'
 
-import { createBot, IBotSettings } from '../'
+import { createBot, IBotSettings } from '../create-bot'
 import { WaitingStates } from '../common'
 import { _ } from '../translations'
 import {
