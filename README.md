@@ -142,7 +142,7 @@ sent message by the bot and set it to one `state` property, such as
 input call like:
 
 ```js
-const selection = await this.input({
+const selection = await this.input$({
   input: `Page: ${pageIndex}\n${list}`,
   edit: this._messageToUpdate,
   match: /^(next|prev|cancel|\d\d?)$/i,
