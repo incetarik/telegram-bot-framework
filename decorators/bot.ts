@@ -535,6 +535,9 @@ async function askForInput(inputObj: IInputOpts, ctx: ContextMessageUpdate) {
         await replyMessage({ message, extra: matchErrorExtra }, ctx)
       }
     }
+    else {
+      return userMessage.text
+    }
   }
   while (retry > 0)
 
