@@ -30,7 +30,6 @@ export function action(opts?: IActionDecoratorOpts) {
 
     initArray.push({ type: 'action', value: actionContent, name })
 
-    // let funValue
     Object.defineProperty(target, propName, {
       get() {
         return this[ SYM_ACTIONS ][ propName ]
