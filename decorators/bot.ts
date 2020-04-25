@@ -41,7 +41,7 @@ export interface IBot {
    *
    * @memberof IBot
    */
-  start?(): void
+  start(): void
 
   /**
    * Expects an input from the user.
