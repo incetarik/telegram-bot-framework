@@ -177,6 +177,12 @@ timed out.
 - You can set a timeout for a command function.
 - You can reset several state properties and/or provide the new value for
 resetting.
+- You can add middlewares or config the `Telegraf` instance by
+overriding/defining the `start()` function inside the class manually and
+using the `this.ref` property to manage all of changes before you start.
+Don't forget to call `this.init()` to make all of these things work and
+`this.ref.launch()` and `this.ref.startPolling()`
+
 - You can listen for events, the package uses RxJS Observables.
 - You can disable emitting an event for property changes or action/command
 functions.
@@ -188,6 +194,24 @@ starts the bot.
 - You can reach the current `ContextMessageUpdate` by `this.context`.
 - You can always make a pull request to improve the library!
 
+## Setup
+To use this package, adding this package name into `dependencies` section of
+your `package.json` file would be enough. Ensure that your node executing this
+library supports decorators. You may use a transpiler such as Babel to compile
+this to older versions of JavaScript. Hence, you will not have decorator
+problem.
+
+If you are using TypeScript, you need to add `typescript` into your
+`devDependencies` section of `package.json`. Then you need to have a
+`tsconfig.json` file which is used for setting TypeScript compiler properties.
+Ensure that you have `experimentalDecorators` property set to `true` in
+`compilerOptions`.
+
+You can create this file by `tsc --init` command if you have TypeScript.
+
+After you done the language and the package sides, you just need to run the
+file your code is written (or compiled file by TypeScript) and your bot should
+be serving.
 
 ## Examples
 A hello world bot would be like this
@@ -358,6 +382,80 @@ class VideoDownloaderBot {
     this.isSearching = false
   }
 }
+```
+
+---
+Another example includes an assembly (just add and sub) operating machine
+example.
+
+```ts
+interface ASMBot extends IBot {}
+
+@bot()
+class ASMBot {
+  @state() stack: number[] = []
+
+  @command()
+  async *asm() {
+    yield {
+      message: 'Please use `"push $num"` and one of `"add"`, `"sub"`, `"pop"`, `"stop"`',
+      // Mark the message as markdown
+      extra: Extra.markdown(true)
+    }
+
+    while (true) {
+      const next = yield {
+        input: 'Next:',
+        match: /add|sub|pop|stop|(push\s+\d{1,5})/,
+        // This will be asked (sending "Next:") if user input was not valid
+        keepAsking: true,
+        // Expect user to enter this correctly, forever
+        retry: Infinity
+      }
+
+      switch (next.slice(0, 4).trim()) {
+        case 'add': {
+          const right = Number(this.stack.pop() ?? '0')
+          const left = Number(this.stack.pop() ?? '0')
+          this.stack.push(left + right)
+          break
+        }
+        case 'sub': {
+          const right = Number(this.stack.pop() ?? '0')
+          const left = Number(this.stack.pop() ?? '0')
+          this.stack.push(left - right)
+          break
+        }
+        case 'pop': {
+          const value = this.stack.pop()
+          if (typeof value === 'undefined') {
+            yield { message: 'No value found' }
+          }
+          else {
+            yield { message: `${value}` }
+          }
+          break
+        }
+        case 'push': {
+          const [ , value ] = next.split(' ')
+          const num = Number(value)
+          this.stack.push(num)
+          break
+        }
+        case 'stop': {
+          yield {
+            message: `Execution is stopped\nStack:\`\`\`\n\n${JSON.stringify(this.stack, undefined, 1)} \`\`\``,
+            extra: Extra.markdown(true)
+          }
+          return
+        }
+      }
+    }
+  }
+}
+
+const b = new ASMBot()
+b.start()
 ```
 
 If you want to support to the project:
