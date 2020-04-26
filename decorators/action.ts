@@ -3,7 +3,7 @@ import { ContextMessageUpdate } from 'telegraf'
 import { executer, INIT_MAP, SYM_ACTIONS, SYM_EVENTS } from './common'
 
 export function action(opts?: IActionDecoratorOpts) {
-  return function <T extends Function = Function>(target: any, propName: string, descriptor?: TypedPropertyDescriptor<T>) {
+  return function <T extends (...args: any[]) => any = (...args: any[]) => any>(target: any, propName: string, descriptor?: TypedPropertyDescriptor<T>) {
     const {
       name = propName,
       emitsEvent = false,

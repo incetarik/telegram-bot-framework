@@ -6,7 +6,7 @@ import {
 } from './common'
 
 export function command(opts?: ICommandDecoratorOpts) {
-  return function <T extends Function = Function>(target: any, propName: string, descriptor?: TypedPropertyDescriptor<T>) {
+  return function <T extends (...args: any[]) => any = (...args: any[]) => any>(target: any, propName: string, descriptor?: TypedPropertyDescriptor<T>) {
     const {
       name = propName,
       emitsEvent = false,
