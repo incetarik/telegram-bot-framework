@@ -160,11 +160,23 @@ class Executer {
   private executingCommand: WeakMap<any, { genOrPromise: AsyncGenerator | Promise<any>, initializer: InitSettings }> = new WeakMap()
   private executingHear: WeakMap<any, boolean> = new WeakMap()
 
+  async fireHelp(instance: IBot, ctx: ContextMessageUpdate, initializer: InitSettings) {
+    const genOrPromise = initializer.handler.call(instance, ctx)
+
+    if (isGenerator(genOrPromise)) {
+      return await this.iterate(instance, ctx, genOrPromise)
+    }
+    else {
+      return await genOrPromise
+    }
+  }
+
   async fireOnCommand(instance: IBot, ctx: ContextMessageUpdate, initializer: InitSettings) {
     if (this.askedInputInCommand.get(instance)) {
       return
     }
 
+    //@ts-ignore
     const { handler, opts } = initializer
 
     const {
@@ -259,6 +271,7 @@ class Executer {
   }
 
   async fireOnHears(instance: IBot, ctx: ContextMessageUpdate, initializer: InitSettings) {
+    //@ts-ignore
     const { opts, handler } = initializer
     //@ts-ignore
     const { executeDuringCommand, othersMayHear } = opts
@@ -605,6 +618,13 @@ export function handleHears(instance: any, initializer: InitSettings) {
   return async function (ctx: ContextMessageUpdate) {
     instance[ SYM_CONTEXT ] = ctx
     await executer.fireOnHears(instance, ctx, initializer)
+  }
+}
+
+export function handleHelp(instance: any, initializer: InitSettings) {
+  return async function (ctx: ContextMessageUpdate) {
+    instance[ SYM_CONTEXT ] = ctx
+    await executer.fireHelp(instance, ctx, initializer)
   }
 }
 
