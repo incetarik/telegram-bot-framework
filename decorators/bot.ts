@@ -5,7 +5,7 @@ import { Message } from 'telegraf/typings/telegram-types'
 import { WaitingStates } from '../common'
 import {
   askForInput, handleActions, handleCommand, handleHears, IInputOpts,
-  IReplyMessage, replyMessage
+  IReplyMessage, replyMessage, handleHelp
 } from '../common/executer'
 import { createBot, IBotSettings } from '../create-bot'
 import {
@@ -297,6 +297,8 @@ export function bot(opts?: IBotSettings) {
 
           const initArray = INIT_MAP.get(constr.prototype)
           if (initArray) {
+            const commandsAdded: string[] = []
+
             initArray.forEach(it => {
               switch (it.type) {
                 case 'action': {
@@ -305,13 +307,22 @@ export function bot(opts?: IBotSettings) {
                 }
 
                 case 'command': {
+                  if (commandsAdded.indexOf(it.name) >= 0) {
+                    throw new Error(`The command /${it.name} is already added before`)
+                  }
+
                   this.ref.command(it.name, handleCommand(this, it))
+                  commandsAdded.push(it.name)
                   break
                 }
 
                 case 'hears': {
                   this.ref.hears(it.match, handleHears(this, it))
                   const { executeCount = Infinity } = it.opts
+                  if (it.name in initialHearsExecutions) {
+                    throw new Error(`The hears ${it.name} is already added before`)
+                  }
+
                   initialHearsExecutions[ it.name ] = executeCount
                   break
                 }
