@@ -64,6 +64,13 @@ export function state(properties?: IBotStateSettings) {
     }
 
     originalSettings = { ...properties }
+    Object.defineProperty(originalSettings, '_defaultValue', {
+      configurable: false,
+      enumerable: false,
+      get() {
+        return propDefault
+      }
+    })
 
     //@ts-ignore
     properties[ '_reset' ] = function () {
