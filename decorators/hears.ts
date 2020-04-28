@@ -6,6 +6,19 @@ const DEFAULTS: Partial<IHearsDecoratorOpts> = {
   keepMatchResults: false
 }
 
+/**
+ * Marks the function as `hears` function meaning that the function will be
+ * executed when the user message matches the given string exactly, or matches
+ * to a given regular expression.
+ *
+ * When the match occurs with RegExp, then the matched groups will be passed as
+ * the parameters of the function where the full-match is the last parameter
+ * and the parameters starts from the first group.
+ *
+ * @export
+ * @param {(IHearsDecoratorOpts | string)} opts Options or the exact match.
+ * @returns Method Decorator
+ */
 export function hears(opts: IHearsDecoratorOpts | string) {
   return function <T extends (...args: any[]) => any = (...args: any[]) => any>(target: any, propName: string, descriptor?: TypedPropertyDescriptor<T>) {
     if (typeof opts === 'string') {

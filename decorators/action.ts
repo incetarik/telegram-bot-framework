@@ -4,6 +4,17 @@ const DEFAULTS: Partial<IActionDecoratorOpts> = {
   emitsEvent: false
 }
 
+/**
+ * Marks the function as an action of the bot corresponding to any
+ * `callback_data` of any `input$()` message.
+ *
+ * The function will be executed when the user executes an action due to the,
+ * for example, a button provided by a message.
+ *
+ * @export
+ * @param {IActionDecoratorOpts} [opts] Options of the action decorator.
+ * @returns Method Decorator
+ */
 export function action(opts?: IActionDecoratorOpts) {
   return function <T extends (...args: any[]) => any = (...args: any[]) => any>(target: any, propName: string, descriptor?: TypedPropertyDescriptor<T>) {
     if (typeof opts !== 'object') {

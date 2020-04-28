@@ -5,6 +5,16 @@ const DEFAULTS: Partial<ICommandDecoratorOpts> = {
   resetStates: [],
 }
 
+/**
+ * Marks the function as command function of the bot.
+ *
+ * When the user sends a command starting with / (slash) followed by the same
+ * name of the function, the function is executed.
+ *
+ * @export
+ * @param {ICommandDecoratorOpts} [opts] Options for the command decorator.
+ * @returns Method Decorator
+ */
 export function command(opts?: ICommandDecoratorOpts) {
   return function <T extends (...args: any[]) => any = (...args: any[]) => any>(target: any, propName: string, descriptor?: TypedPropertyDescriptor<T>) {
     if (typeof opts !== 'object') {
