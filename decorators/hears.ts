@@ -24,7 +24,7 @@ export function hears(opts: IHearsDecoratorOpts | string) {
     if (typeof opts === 'string') {
       opts = {
         ...DEFAULTS,
-        match: new RegExp(opts),
+        match: new RegExp(`^${opts.replace(/\^/g, '\\^').replace(/\$/g, '\\$')}$`),
       }
     }
 
