@@ -29,6 +29,8 @@ declare interface Dictionary<T = any> {
   [ key: number ]: T
 }
 
+declare type Func<TReturn = any, TArgs extends any[] = any[]> = (...args: TArgs) => TReturn
+
 declare interface IBotStateSettings {
   /**
    * The timeout of the property.
@@ -134,7 +136,7 @@ declare interface IBotStateSettings {
   /**
    * Indicates whether the events for this property will be emitted or not.
    *
-   * `true` by default.
+   * `false` by default.
    *
    * @type {boolean}
    * @memberof BotStateSettings
@@ -156,9 +158,6 @@ declare interface ICommandDecoratorOpts {
 
   /**
    * Indicates whether the function call emits an event or not.
-   *
-   * The emitted events will have name in following form:
-   * `command.call.{NAME}`
    *
    * `false` by default.
    *
@@ -190,10 +189,10 @@ declare interface ICommandDecoratorOpts {
   /**
    * The error to reply to the user when timeout occurs.
    *
-   * @type {number}
+   * @type {string}
    * @memberof ICommandDecoratorOpts
    */
-  timeoutMessage?: number
+  timeoutMessage?: string
 }
 
 declare interface IActionDecoratorOpts {
@@ -210,13 +209,79 @@ declare interface IActionDecoratorOpts {
   /**
    * Indicates whether the function call emits an event or not.
    *
-   * The emitted events will have name in following form:
-   * `action.call.{NAME}`
-   *
    * `false` by default.
    *
    * @type {boolean}
    * @memberof IActionDecoratorOpts
    */
   emitsEvent?: boolean
+}
+
+declare interface IHearsDecoratorOpts {
+  /**
+   * The regular expression or the exact string to match from the user message.
+   * If the type of this is string, then the exact match is expected.
+   *
+   * @type {(RegExp | string)}
+   * @memberof IHearsDecoratorOpts
+   */
+  match: RegExp | string
+
+  /**
+   * The number of times the function may be executed when the user message
+   * matches.
+   *
+   * `Infinity` by default.
+   *
+   * @type {number}
+   * @memberof IHearsDecoratorOpts
+   */
+  executeCount?: number
+
+  /**
+   * Indicates whether the function call emits an event or not.
+   *
+   * `false` by default.
+   *
+   * @type {boolean}
+   * @memberof IHearsDecoratorOpts
+   */
+  emitsEvent?: boolean
+
+  /**
+   * Indicates whether the match results should be kept in the related
+   * match properties of the class, instead of resetting them at the end
+   * of the function.
+   *
+   * `false` by default.
+   *
+   * @type {boolean}
+   * @memberof IHearsDecoratorOpts
+   */
+  keepMatchResults?: boolean
+
+  /**
+   * Indicates whether the function should be executed even if the user is
+   * responding to a command for now.
+   *
+   * `false` by default.
+   *
+   * @type {boolean}
+   * @memberof IHearsDecoratorOpts
+   */
+  executeDuringCommand?: boolean
+
+  /**
+   * Indicates whether the other `@hears` functions may be executed during the
+   * execution of this hears function.
+   *
+   * For example, if this is `false`, and the function has `input$()` inside
+   * waiting for an input from the user, and the user has replied with a
+   * message which matches with any of other hears of the bot
+   * (including this one), then the other hears functions will not be executed.
+   *
+   * @type {boolean}
+   * @memberof IHearsDecoratorOpts
+   */
+  othersMayHear?: boolean
 }

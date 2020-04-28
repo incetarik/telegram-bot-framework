@@ -3,14 +3,17 @@ import { ContextMessageUpdate } from 'telegraf'
 import { IBot } from './bot'
 import { _ } from '../translations'
 
-export const SYM_ACTIONS = Symbol('@@bot-actions')
-export const SYM_COMMANDS = Symbol('@@bot-commands')
+export type InitSettings =
+  { name: string, type: 'command', handler(...args: any[]): AsyncGenerator | Promise<void>, opts: ICommandDecoratorOpts }
+  | { name: string, type: 'action', handler(...args: any[]): AsyncGenerator | Promise<void>, opts: IActionDecoratorOpts }
+  | { name: string, type: 'hears', handler(...args: any[]): AsyncGenerator | Promise<void>, opts: IHearsDecoratorOpts, match: RegExp }
+
 export const SYM_EVENTS = Symbol('@@bot-events')
-export const SYM_INIT = Symbol('@@bot-initialize')
 export const SYM_CONTEXT = Symbol('@@bot-caller')
 export const SYM_STATE = Symbol('@@bot-state')
 export const SYM_PROMISE_REPLACE = Symbol('@@replace')
-export const INIT_MAP: WeakMap<IBot, { name: string, type: 'command' | 'action', value: Function }[]> = new WeakMap()
+export const SYM_HEAR_EXEC_COUNTS = Symbol('@@bot-hears-counts')
+export const INIT_MAP: WeakMap<IBot, InitSettings[]> = new WeakMap()
 
 /**
  * Indicates whether the given object is generator-like or not.
@@ -54,7 +57,7 @@ export function isGenerator(thing: any): thing is AsyncGenerator {
  * @param {*} [extra] Extra information for the executer.
  * @returns A generator function.
  */
-export function executer<T extends Function = Function>(instance: any, fun: T, context: ContextMessageUpdate, extra?: { timeout?: number, timeoutMessage?: string }) {
+export function executer<T extends Function = Function>(instance: any, fun: T, context: ContextMessageUpdate, extra?: { timeout?: number, timeoutMessage?: string, cancelIfUserIsWaited?: boolean }) {
   let timeout: number
   let timeoutMessage: string
   let timeoutId: any

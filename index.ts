@@ -1,5 +1,6 @@
 /// <reference path="./types.d.ts"/>
-export { WaitingStates } from './common'
+
+export { WaitingStates, IInputOpts, IReplyMessage } from './common'
 export { IBotSettings } from './create-bot'
-export { action, bot, command, state, IBot, IInputOpts, IReplyMessage } from './decorators'
+export { action, bot, command, state, IBot, hears } from './decorators'
 export { _, registerLanguage } from './translations'

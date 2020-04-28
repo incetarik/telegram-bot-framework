@@ -60,7 +60,7 @@ export function state(properties?: IBotStateSettings) {
     properties[ '_timerSet' ] = false
 
     if (!('emitEvents' in properties)) {
-      properties.emitsEvent = true
+      properties.emitsEvent = false
     }
 
     originalSettings = { ...properties }
