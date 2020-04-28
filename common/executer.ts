@@ -160,7 +160,7 @@ class Executer {
   private executingCommand: WeakMap<any, { genOrPromise: AsyncGenerator | Promise<any>, initializer: InitSettings }> = new WeakMap()
   private executingHear: WeakMap<any, boolean> = new WeakMap()
 
-  async fireHelp(instance: IBot, ctx: ContextMessageUpdate, initializer: InitSettings) {
+  async fireGeneric(instance: IBot, ctx: ContextMessageUpdate, initializer: InitSettings) {
     const genOrPromise = initializer.handler.call(instance, ctx)
 
     if (isGenerator(genOrPromise)) {
@@ -621,10 +621,10 @@ export function handleHears(instance: any, initializer: InitSettings) {
   }
 }
 
-export function handleHelp(instance: any, initializer: InitSettings) {
+export function handleGeneric(instance: any, initializer: InitSettings) {
   return async function (ctx: ContextMessageUpdate) {
     instance[ SYM_CONTEXT ] = ctx
-    await executer.fireHelp(instance, ctx, initializer)
+    await executer.fireGeneric(instance, ctx, initializer)
   }
 }
 
