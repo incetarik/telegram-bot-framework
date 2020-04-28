@@ -26,6 +26,18 @@ export interface IBotSettings extends TelegrafOptions {
   catchFunction?: string
 
   /**
+   * The name of the class function for help command.
+   * `help` by default.
+   *
+   * When the user sends `/help` command, this function will be executed.
+   * Or, the function marked with `@help` decorator will be executed.
+   *
+   * @type {string}
+   * @memberof IBotSettings
+   */
+  helpFunction?: string
+
+  /**
    * Integrates another middlewares to the bot.
    *
    * @param {...Middleware<ContextMessageUpdate>[]} middlewares Middlewares.

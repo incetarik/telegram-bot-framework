@@ -270,15 +270,16 @@ export interface IBot {
 export function bot(opts?: IBotSettings) {
   const {
     catchFunction = 'onError',
+    helpFunction = 'help',
     use,
   } = (opts || {});
 
   return function botClass<T extends { new(...args: any[]): {} }>(constr: T) {
+    let helpSet: string | undefined
     let initialized = false
     let eventSubject: Subject<Event>
     let reference: Telegraf<ContextMessageUpdate>
 
-    const actions: Dictionary<Function> = {}
     const initialHearsExecutions: Dictionary<number> = {}
     const state: Dictionary<Dictionary<{ value: any, props: IBotStateSettings }>> = {}
 
@@ -315,6 +316,16 @@ export function bot(opts?: IBotSettings) {
                   break
                 }
 
+                case 'help': {
+                  if (helpSet) {
+                    throw new Error(`A help function is already set before: ${helpSet}`)
+                  }
+
+                  this.ref.help(handleHelp(this, it))
+                  helpSet = it.name
+                  break
+                }
+
                 default: {
                   throw new Error(`Invalid information: ${JSON.stringify(it)}`)
                 }
@@ -326,6 +337,11 @@ export function bot(opts?: IBotSettings) {
 
           if (catchFunction in this) {
             this.ref.catch(this[ catchFunction ].bind(this))
+          }
+
+          if (helpFunction in this) {
+            this.ref.help(handleHelp(this, { handler: this.help, name: 'help', type: 'help' }))
+            helpSet = 'help'
           }
 
           if (typeof use !== 'undefined') {
