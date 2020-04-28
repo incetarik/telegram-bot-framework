@@ -38,6 +38,18 @@ export interface IBotSettings extends TelegrafOptions {
   helpFunction?: string
 
   /**
+   * The name of the start function.
+   * `start` by default.
+   *
+   * When the user sends `/start` command, this function will be executed.
+   * Or, the function marked with `@start` decorator will be executed.
+   *
+   * @type {string}
+   * @memberof IBotSettings
+   */
+  startFunction?: string
+
+  /**
    * Integrates another middlewares to the bot.
    *
    * @param {...Middleware<ContextMessageUpdate>[]} middlewares Middlewares.

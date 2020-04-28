@@ -8,6 +8,7 @@ export type InitSettings =
   | { name: string, type: 'action', handler(...args: any[]): AsyncGenerator | Promise<any>, opts: IActionDecoratorOpts }
   | { name: string, type: 'hears', handler(...args: any[]): AsyncGenerator | Promise<any>, opts: IHearsDecoratorOpts, match: RegExp }
   | { name: string, type: 'help', handler(...args: any[]): AsyncGenerator | Promise<any> }
+  | { name: string, type: 'start', handler(...args: any[]): AsyncGenerator | Promise<any> }
 
 export const SYM_EVENTS = Symbol('@@bot-events')
 export const SYM_CONTEXT = Symbol('@@bot-caller')
