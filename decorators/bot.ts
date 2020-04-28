@@ -181,6 +181,7 @@ export interface IBot {
 export function bot(opts?: IBotSettings) {
   const {
     catchFunction = 'onError',
+    use,
   } = (opts || {});
 
   return function botClass<T extends { new(...args: any[]): {} }>(constr: T) {
@@ -224,6 +225,16 @@ export function bot(opts?: IBotSettings) {
 
           if (catchFunction in this) {
             this.ref.catch(this[ catchFunction ].bind(this))
+          }
+
+          if (typeof use !== 'undefined') {
+            //@ts-ignore
+            let useArray: Middleware<ContextMessageUpdate>[] = use
+            if (!Array.isArray(use)) {
+              useArray = [ use ]
+        }
+
+            this.ref.use(useArray.shift()!, ...useArray)
           }
         }
       },

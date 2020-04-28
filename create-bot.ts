@@ -1,4 +1,4 @@
-import Telegraf, { TelegrafOptions } from 'telegraf'
+import Telegraf, { TelegrafOptions, Middleware, ContextMessageUpdate } from 'telegraf'
 
 import { WaitingStates } from './common'
 import { initEnvironment } from './environment'
@@ -24,6 +24,14 @@ export interface IBotSettings extends TelegrafOptions {
    * @memberof IBotSettings
    */
   catchFunction?: string
+
+  /**
+   * Integrates another middlewares to the bot.
+   *
+   * @param {...Middleware<ContextMessageUpdate>[]} middlewares Middlewares.
+   * @memberof IBot
+   */
+  use?: Middleware<ContextMessageUpdate> | Middleware<ContextMessageUpdate>[]
 }
 
 export function createBot(opts: IBotSettings) {
