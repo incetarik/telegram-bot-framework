@@ -210,6 +210,17 @@ class WaitingStateHandler {
   }
 
   /**
+   * Indicates whether the given user id is being waited or not.
+   *
+   * @param {number} id ID of the user.
+   * @returns `true` if the user is being waited.
+   * @memberof WaitingStateHandler
+   */
+  isWaitingFor(id: number) {
+    return id in waitingStates
+  }
+
+  /**
    * Resolves previously waited user{ es }ge with an error.
    *
    * @param {number} id ID of the user to resolve with a message.
