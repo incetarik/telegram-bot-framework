@@ -21,6 +21,20 @@ is used to mark a function as a command of the bot. So that when a command is
 sent by the client matching the name of the function, or with the name given in
 the settings.
 
+- `@hears(settings: IHearsDecoratorOpts | string)` method decorator: This
+decorator is used to mark a function as a `hears` handler of the bot.
+This decorator takes either a string for **exact match** or an object
+describing the information and the regular expression to match when user sends
+a message. Additionally, the match groups will be passed as parameters to the
+function.
+
+- `@help()` method decorator: This decorator is used to mark a function as the
+corresponding function for `/help` command. This decorator is provided to
+provide a way of having a function with any name to make it `/help` function.
+Instead, you may use a function with **help** name as usual and it will be
+assumed as the function for `/help`. The **help** function may be both async
+and generator.
+
 - `@state(settings?: IBotStateSettings)` property decorator: This decorator is
 used to mark a property as user/client dependent property.
 Hence, the property is user based, each user will have its own value of
@@ -96,6 +110,8 @@ To start the bot, just create an instance of the class. And then just
 - Define command functions and decorate them with `@command()`. Better
 if async generators.
 - Define action functions and decorate them with `@action()`.
+- Define custom functions when user sends a message and that matches with
+`@hears()`.
 - Have a cancel/cleanup function and reset all user variable. Also
 `cancelInput()` to prevent to process previous input from user if there
 is any function awaiting any.
@@ -170,6 +186,14 @@ property. It indicates that this input call will cancel the previous one so
 that the previous function call will be resolved with cancel symbol. Which is
 handled by the following condition in the example.
 
+Lastly, for **hears** decorated functions, when the string is passed as a
+filter, then the string is expected to match exactly. If you don't want this
+you may pass an object containing `match` property as string or `RegExp`.
+
+The hears functions **WILL BE** ignored by default if the message is matched
+with the filter but it is sent during a `@command` function execution.
+This behavior may be changed in the decorator setting.
+
 ## Notes
 - You can set usage limits or timeouts (for updating or reading) for the
 state properties and also provide the value to assign when it is expired or
@@ -177,6 +201,11 @@ timed out.
 - You can set a timeout for a command function.
 - You can reset several state properties and/or provide the new value for
 resetting.
+- You can reach the matches with `${NUM}` properties such as `this.$0` for
+full match and `this.$9` for the ninth match of the `@hears()` function.
+- You can keep the last match of any `@hears()` function by setting
+`keepMatchResults` property of the decorator to true.
+- You will have matched groups in your parameters for `@hears()` functions.
 - You can add middlewares or config the `Telegraf` instance by
 overriding/defining the `start()` function inside the class manually and
 using the `this.ref` property to manage all of changes before you start.
@@ -229,7 +258,9 @@ bot.start()
 ```
 
 ---
-A bot multiplying a number and reverses a string would be like
+A bot multiplying a number and reverses a string, and listening for something
+would be like
+
 ```js
 @bot()
 class OpBot {
@@ -264,6 +295,26 @@ class OpBot {
 
     message = message.split('').reverse().join('')
     yield { message }
+  }
+
+  @hears('now')
+  * sendNow() {
+    yield (new Date()).toLocaleString()
+  }
+
+  @hears({ match: /(\d+)\s+\+\s+(\d+)/ })
+  * add(left: string, right: string, _allMatch: string) {
+    yield parseInt(left) + parseInt(right)
+
+    // When user sends 3 +  5
+    // left      -> "3"
+    // right     -> "5"
+    // _allMatch -> "3 +  5"
+    //
+    // Likewise, you can reach these matches with ${NUM} properties.
+    // this.$0   -> "3 +  5"
+    // this.$1   -> "3"
+    // this.$2   -> "5"
   }
 }
 ```
