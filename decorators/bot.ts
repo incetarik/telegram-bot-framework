@@ -34,7 +34,7 @@ export interface IBot {
   init(): void
 
   /**
-   * The start function of the bot.
+   * Runs the bot.
    *
    * This function calls `init()` to initialize the environment of the bot
    * and `launch()` and `startPolling()` functions of the Telegraf instance

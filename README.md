@@ -100,7 +100,7 @@ an object to ask for input or sending a message. For this, you can use
 `input$()` and `message$()` async functions to provide the same functionality.
 
 To start the bot, just create an instance of the class. And then just
-`.start()` the bot.
+`.run()` the bot.
 
 ## Approach
 - Ensure you have BOT_TOKEN environment (or you can change this)
@@ -207,7 +207,7 @@ full match and `this.$9` for the ninth match of the `@hears()` function.
 `keepMatchResults` property of the decorator to true.
 - You will have matched groups in your parameters for `@hears()` functions.
 - You can add middlewares or config the `Telegraf` instance by
-overriding/defining the `start()` function inside the class manually and
+overriding/defining the `run()` function inside the class manually and
 using the `this.ref` property to manage all of changes before you start.
 Don't forget to call `this.init()` to make all of these things work and
 `this.ref.launch()` and `this.ref.startPolling()`
@@ -215,9 +215,9 @@ Don't forget to call `this.init()` to make all of these things work and
 - You can listen for events, the package uses RxJS Observables.
 - You can disable emitting an event for property changes or action/command
 functions.
-- You can set `start` function manually, in that case do not forget to call
+- You can set `run` function manually, in that case do not forget to call
 `init()` function to provide all of these functionalities. If you do not
-define `start` function manually, then it will be defined automatically that
+define `run` function manually, then it will be defined automatically that
 starts the bot.
 - You can reach the underlying `Telegraf` instance by `this.ref`.
 - You can reach the current `ContextMessageUpdate` by `this.context`.
@@ -253,8 +253,8 @@ class SayHiBot {
   }
 }
 
-const bot = new SayHiBot()
-bot.start()
+const sayHiBot = new SayHiBot()
+sayHiBot.run()
 ```
 
 ---
@@ -506,7 +506,7 @@ class ASMBot {
 }
 
 const b = new ASMBot()
-b.start()
+b.run()
 ```
 
 If you want to support to the project:
