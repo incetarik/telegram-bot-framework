@@ -5,7 +5,7 @@ import { Message } from 'telegraf/typings/telegram-types'
 import { WaitingStates } from '../common'
 import {
   askForInput, handleActions, handleCommand, handleHears, IInputOpts,
-  IReplyMessage, replyMessage, handleHelp
+  IReplyMessage, replyMessage, handleGeneric
 } from '../common/executer'
 import { createBot, IBotSettings } from '../create-bot'
 import {
@@ -42,7 +42,14 @@ export interface IBot {
    *
    * @memberof IBot
    */
-  start(): void
+  run(): void
+
+  /**
+   * Resets all of the bot states for the executing user.
+   *
+   * @memberof IBot
+   */
+  resetStates(): void
 
   /**
    * Expects an input from the user.
@@ -269,14 +276,16 @@ export interface IBot {
  */
 export function bot(opts?: IBotSettings) {
   const {
-    catchFunction = 'onError',
     helpFunction = 'help',
+    startFunction = 'start',
+    catchFunction = 'onError',
     use,
   } = (opts || {});
 
   return function botClass<T extends { new(...args: any[]): {} }>(constr: T) {
-    let helpSet: string | undefined
+    let isStartSet = false
     let initialized = false
+    let helpSet: string | undefined
     let eventSubject: Subject<Event>
     let reference: Telegraf<ContextMessageUpdate>
 
@@ -332,8 +341,18 @@ export function bot(opts?: IBotSettings) {
                     throw new Error(`A help function is already set before: ${helpSet}`)
                   }
 
-                  this.ref.help(handleHelp(this, it))
+                  this.ref.help(handleGeneric(this, it))
                   helpSet = it.name
+                  break
+                }
+
+                case 'start': {
+                  if (isStartSet) {
+                    throw new Error('The start function is already set before')
+                  }
+
+                  this.ref.start(handleGeneric(this, it))
+                  isStartSet = true
                   break
                 }
 
@@ -351,8 +370,17 @@ export function bot(opts?: IBotSettings) {
           }
 
           if (helpFunction in this) {
-            this.ref.help(handleHelp(this, { handler: this.help, name: 'help', type: 'help' }))
+            if (helpSet) {
+              throw new Error(`A help function is already set before: ${helpSet}`)
+            }
+
+            this.ref.help(handleGeneric(this, { handler: this.help, name: 'help', type: 'help' }))
             helpSet = 'help'
+          }
+
+          if (startFunction in this) {
+            this.ref.start(handleGeneric(this, { handler: this.start, name: 'start', type: 'start' }))
+            isStartSet = true
           }
 
           if (typeof use !== 'undefined') {
@@ -366,6 +394,23 @@ export function bot(opts?: IBotSettings) {
           }
 
           return initialized = true
+        }
+      },
+      resetStates: {
+        configurable: false,
+        value() {
+          WaitingStates[ 'cancelWaiting' ](this.context.from?.id)
+          const userState = this[ SYM_STATE ] as Dictionary<{ value: any, props: IBotStateSettings }>
+          for (const key in userState) {
+            const prop = userState[ key ]
+            if ('_reset' in prop.props) {
+              //@ts-ignore
+              prop.props[ '_reset' ]?.()
+            }
+
+            //@ts-ignore
+            prop.value = prop.props[ '_defaultValue' ] ?? prop.props[ '_propDefault' ] ?? prop.props.defaultsTo
+          }
         }
       },
       [ SYM_EVENTS ]: {
@@ -411,13 +456,22 @@ export function bot(opts?: IBotSettings) {
       },
     })
 
-    if (!('start' in constr.prototype)) {
-      Object.defineProperty(constr.prototype, 'start', {
+    if (!('run' in constr.prototype)) {
+      Object.defineProperty(constr.prototype, 'run', {
         configurable: false,
         value() {
           this.init()
           this.ref.launch()
           this.ref.startPolling()
+        }
+      })
+    }
+
+    if (!('start' in constr.prototype)) {
+      Object.defineProperty(constr.prototype, 'start', {
+        configurable: false,
+        value() {
+          this.resetStates()
         }
       })
     }
