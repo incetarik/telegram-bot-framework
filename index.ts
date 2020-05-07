@@ -6,6 +6,7 @@ export {
   INotificationInfo,
   IReplyMessage,
   makeNotification as notify,
+  makeInputObject as input,
 } from './common'
 
 export { IBotSettings } from './create-bot'

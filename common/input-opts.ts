@@ -126,3 +126,58 @@ export function isInputOptions(opts: any): opts is IInputOpts {
   if (typeof opts.input !== 'string') { return false }
   return true
 }
+
+/**
+ * Creates an input object.
+ *
+ * @export
+ * @param {string} input The message to send.
+ * @param {(string | RegExp)} [match] The match condition.
+ * @param {string} [matchError] The message to send when no match occurs.
+ * @param {ExtraEditMessage} [matchErrorExtra] The extras of match error.
+ * @param {Message} [edit] The previous message to edit.
+ * @param {ExtraEditMessage} [extra] The extras of the input message.
+ * @param {boolean} [cancelPrevious] Indicates whether the previous message
+ * should be cancelled.
+ *
+ * @param {(message: Message) => Promise<void>} [didMessageSend] A handler
+ * to receive previously sent message to keep it to pass it as edit message
+ * later again.
+ *
+ * @param {number} [retry] The number of trials.
+ * @param {number} [timeout] The timeout for the input.
+ * @param {boolean} [keepAsking] Indicates whether the input text should be
+ * sent again if user replies invalid/non-matching input.
+ *
+ * @returns {IInputOpts} An input options object.
+ */
+export function makeInputObject(input: string, match?: string | RegExp, matchError?: string, matchErrorExtra?: ExtraEditMessage, edit?: Message, extra?: ExtraEditMessage, cancelPrevious?: boolean, didMessageSend?: (message: Message) => Promise<void>, retry?: number, timeout?: number, keepAsking?: boolean): IInputOpts
+
+/**
+ * Creates an input object to yield.
+ *
+ * @export
+ * @param {IInputOpts} input The input options.
+ * @returns {IInputOpts} An input options object.
+ */
+export function makeInputObject(input: IInputOpts): IInputOpts
+
+export function makeInputObject(input: IInputOpts | string, match?: string | RegExp, matchError?: string, matchErrorExtra?: ExtraEditMessage, edit?: Message, extra?: ExtraEditMessage, cancelPrevious?: boolean, didMessageSend?: (message: Message) => Promise<void>, retry?: number, timeout?: number, keepAsking?: boolean): IInputOpts {
+  if (isInputOptions(input)) {
+    return input
+  }
+
+  return {
+    input,
+    match,
+    matchError,
+    matchErrorExtra,
+    retry,
+    timeout,
+    keepAsking,
+    edit,
+    extra,
+    cancelPrevious,
+    didMessageSend
+  }
+}
