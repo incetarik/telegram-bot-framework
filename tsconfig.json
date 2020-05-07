@@ -15,6 +15,7 @@
     "module": "commonjs",
     "strict": true,
     "forceConsistentCasingInFileNames": true,
+    "incremental": false,
     "lib": [
       "ES2017"
     ],
