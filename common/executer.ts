@@ -1,5 +1,6 @@
 import { ContextMessageUpdate } from 'telegraf'
 import { IncomingMessage, Message } from 'telegraf/typings/telegram-types'
+import { compile as compileTemplate } from 'handlebars'
 
 import { IBot } from '../decorators'
 import {
@@ -7,13 +8,17 @@ import {
   SYM_PROMISE_REPLACE, SYM_STATE
 } from '../decorators/common'
 import { _ } from '../translations'
-import { IInputOpts } from './input-opts'
+import { IInputOpts, isInputOptions } from './input-opts'
 import { IReplyMessage } from './reply-message'
 import { WaitingStates } from './waiting-states'
+import { INotificationInfo, isNotificationInfo } from './notify-users'
 
 type IIteratorOpts = {
   timeout?: number,
   timeoutMessage?: string,
+  name?: string
+  type?: 'action' | 'command' | 'hears',
+  parameters?: any[]
 }
 
 class Executer {
@@ -66,9 +71,6 @@ class Executer {
             matched = true
             break
           }
-          else {
-            throw new Error(`Unexpected type of user filter: "${typeof onlyFor}", only number or string expected`)
-          }
         }
 
         isUnauthorized = !matched
@@ -79,7 +81,11 @@ class Executer {
         const handler = instance[ unauthorizedExecHandlerName ] as Func | undefined
 
         if (handler) {
-          handler.call(instance, initializer.name, id, username, ctx)
+          await this.iterate(instance, ctx, handler, {
+            parameters: [ initializer.name, id, username, ctx ],
+            name: initializer.name,
+            type: initializer.type as any
+          })
         }
 
         return
@@ -141,11 +147,15 @@ class Executer {
     this.executingCommand.set(instance, { genOrPromise, initializer })
 
     //@ts-ignore
-    instance.context = ctx
-    //@ts-ignore
     instance[ SYM_CONTEXT ] = ctx
 
-    const generator = this.wrapper(instance, handler, ctx, { timeout, timeoutMessage })()
+    const generator = this.wrapper(instance, handler, ctx, {
+      timeout,
+      timeoutMessage,
+      name: initializer.name,
+      type: 'command',
+    })()
+
     let returnValue: any
     let nextValue: any
 
@@ -224,9 +234,6 @@ class Executer {
     const { keepMatchResults, emitsEvent, match } = opts
 
     //@ts-ignore
-    instance.context = ctx
-
-    //@ts-ignore
     instance[ SYM_CONTEXT ] = ctx
 
     //@ts-ignore
@@ -282,9 +289,6 @@ class Executer {
 
     return async function* (...args: any[]) {
       //@ts-ignore
-      instance.context = ctx
-
-      //@ts-ignore
       instance[ SYM_CONTEXT ] = ctx
 
       const result = await func.apply(instance, args)
@@ -327,7 +331,7 @@ class Executer {
           }
           else if (typeof value !== 'object') { continue }
 
-          if ('input' in value) {
+          if (isInputOptions(value)) {
             if (that.executingCommand.has(instance)) {
               that.askedInputInCommand.set(instance, true)
             }
@@ -336,6 +340,10 @@ class Executer {
           }
           else if ('message' in value) {
             nextValue = await that.replyMessage(value, ctx)
+          }
+          else if (isNotificationInfo(value)) {
+            await that.notifyUsers(options.name!, options.type!, value, ctx)
+            continue
           }
 
           if (typeof nextValue === 'string' && nextValue.startsWith('/')) {
@@ -357,8 +365,20 @@ class Executer {
     }
   }
 
-  private async iterate(instance: IBot, ctx: ContextMessageUpdate, gen: AsyncGenerator, options: IIteratorOpts = {}) {
+  private async iterate(instance: IBot, ctx: ContextMessageUpdate, gen: AsyncGenerator | Func, options: IIteratorOpts = {}) {
     let nextValue: any
+    //@ts-ignore
+    instance[ SYM_CONTEXT ] = ctx
+
+    if (typeof gen === 'function') {
+      const { parameters = [] } = options
+      gen = gen.apply(instance, parameters)
+    }
+
+    if (!isGenerator(gen)) {
+      await gen
+      return
+    }
 
     while (true) {
       const iterationResult = await gen.next(nextValue)
@@ -388,6 +408,10 @@ class Executer {
       }
       else if ('message' in value) {
         nextValue = await this.replyMessage(value, ctx)
+      }
+      else if (isNotificationInfo(value)) {
+        await this.notifyUsers(options.name!, options.type!, value, ctx)
+        continue
       }
 
       if (typeof nextValue === 'string' && nextValue.startsWith('/')) {
@@ -492,6 +516,66 @@ class Executer {
     }
     else {
       throw new Error('replyMessage can only send string messages for now.')
+    }
+  }
+
+  async notifyUsers(name: string, type: 'action' | 'command' | 'hears', messageObj: INotificationInfo, ctx: ContextMessageUpdate): Promise<boolean | Error | (boolean | Error)[] | undefined> {
+    const { format, notify, extra } = messageObj
+    const { username, id } = ctx.from!
+    const now = new Date()
+    const epoch = ~~(now.getTime() / 1000)
+
+    const data = {
+      id,
+      username,
+      epoch,
+      date: now,
+      now,
+      type,
+      name,
+
+      i: id,
+      u: username,
+      d: now,
+      e: epoch,
+      t: type,
+      n: name,
+    }
+
+    const result = compileTemplate(format)(data)
+
+    if (typeof notify === 'string' || typeof notify === 'number') {
+      try {
+        await ctx.telegram.sendMessage(notify, result, extra)
+        return true
+      }
+      catch (error) {
+        if (typeof error === 'string') {
+          error = new Error(error)
+        }
+
+        return error
+      }
+    }
+    else if (Array.isArray(notify)) {
+      for (let i = notify.length - 1; i >= 0; --i) {
+        const target = notify[ i ]
+
+        try {
+          await ctx.telegram.sendMessage(target, result, extra)
+          //@ts-ignore
+          notify[ i ] = true
+        }
+        catch (error) {
+          if (typeof error === 'string') {
+            error = new Error(error)
+          }
+
+          notify[ i ] = error
+        }
+      }
+
+      return notify as any as boolean[]
     }
   }
 
