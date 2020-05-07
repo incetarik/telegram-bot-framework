@@ -4,9 +4,10 @@ import { Message } from 'telegraf/typings/telegram-types'
 
 import { WaitingStates } from '../common'
 import {
-  askForInput, handleActions, handleCommand, handleHears, IInputOpts,
-  IReplyMessage, replyMessage, handleGeneric
+  askForInput, handleActions, handleCommand, handleHears, replyMessage, handleGeneric
 } from '../common/executer'
+import { IInputOpts } from "../common/input-opts"
+import { IReplyMessage } from "../common/reply-message"
 import { createBot, IBotSettings } from '../create-bot'
 import {
   INIT_MAP, SYM_CONTEXT, SYM_EVENTS,
@@ -411,6 +412,13 @@ export function bot(opts?: IBotSettings) {
             //@ts-ignore
             prop.value = prop.props[ '_defaultValue' ] ?? prop.props[ '_propDefault' ] ?? prop.props.defaultsTo
           }
+        }
+      },
+      context: {
+        configurable: false,
+        enumerable: false,
+        get() {
+          return this[ SYM_CONTEXT ]
         }
       },
       [ SYM_EVENTS ]: {
