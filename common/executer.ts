@@ -308,49 +308,7 @@ class Executer {
           }, timeout)
         }
 
-        let returnValue: any
-        let nextValue: any
-
-        while (true) {
-          const iterationResult = await result.next(nextValue)
-          nextValue = undefined
-          const { value, done } = iterationResult
-
-          if (done) {
-            returnValue = value ?? nextValue
-            break
-          }
-
-          if (typeof value === 'string') {
-            await that.replyMessage({ message: value }, ctx)
-            continue
-          }
-          else if (typeof value === 'number') {
-            await that.replyMessage({ message: value.toString() }, ctx)
-            continue
-          }
-          else if (typeof value !== 'object') { continue }
-
-          if (isInputOptions(value)) {
-            if (that.executingCommand.has(instance)) {
-              that.askedInputInCommand.set(instance, true)
-            }
-
-            nextValue = await that.askForInput(value, ctx)
-          }
-          else if ('message' in value) {
-            nextValue = await that.replyMessage(value, ctx)
-          }
-          else if (isNotificationInfo(value)) {
-            await that.notifyUsers(options.name!, options.type!, value, ctx)
-            continue
-          }
-
-          if (typeof nextValue === 'string' && nextValue.startsWith('/')) {
-            returnValue = undefined
-            break
-          }
-        }
+        const returnValue = await that.iterate(instance, ctx, result, options)
 
         if (timeoutId) {
           clearTimeout(timeoutId)
@@ -376,8 +334,8 @@ class Executer {
     }
 
     if (!isGenerator(gen)) {
-      await gen
-      return
+      const result = await gen
+      return result
     }
 
     while (true) {
@@ -399,7 +357,7 @@ class Executer {
       }
       else if (typeof value !== 'object') { continue }
 
-      if ('input' in value) {
+      if (isInputOptions(value)) {
         if (this.executingCommand.has(instance)) {
           this.askedInputInCommand.set(instance, true)
         }
