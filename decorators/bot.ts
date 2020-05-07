@@ -150,10 +150,10 @@ export interface IBot {
   /**
    * Returns an observable for listening events emitted from this class.
    *
-   * @returns {Observable<Event>} An observable for listening events.
+   * @returns {Observable<BotEvent>} An observable for listening events.
    * @memberof IBot
    */
-  listenEvents$(): Observable<Event>
+  listenEvents$(): Observable<BotEvent>
 
   /**
    * The current message context.
@@ -286,7 +286,7 @@ export function bot(opts?: IBotSettings) {
     let isStartSet = false
     let initialized = false
     let helpSet: string | undefined
-    let eventSubject: Subject<Event>
+    let eventSubject: Subject<BotEvent>
     let reference: Telegraf<ContextMessageUpdate>
 
     const initialHearsExecutions: Dictionary<number> = {}
@@ -517,7 +517,7 @@ export function bot(opts?: IBotSettings) {
       listenEvents$: {
         configurable: false,
         value() {
-          return (this[ SYM_EVENTS ] as Subject<Event>).asObservable()
+          return (this[ SYM_EVENTS ] as Subject<BotEvent>).asObservable()
         }
       }
     })

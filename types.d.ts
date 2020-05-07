@@ -1,4 +1,4 @@
-declare interface Event {
+declare interface BotEvent {
   /**
    * The name of the event.
    *
