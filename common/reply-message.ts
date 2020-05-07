@@ -23,3 +23,9 @@ export interface IReplyMessage {
    */
   extra?: ExtraEditMessage
 }
+
+export function isReplyMessage(obj: any): obj is IReplyMessage {
+  if (typeof obj !== 'object') { return false }
+  if (typeof obj.message !== 'string') { return false }
+  return true
+}
