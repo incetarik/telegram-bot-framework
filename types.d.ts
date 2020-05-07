@@ -178,6 +178,42 @@ declare interface ICommandDecoratorOpts {
   resetStates?: (string | [ string, any ])[]
 
   /**
+   * Indicates which user may execute this command.
+   *
+   * The value can be either the user id, username, or array of these two.
+   *
+   * Additionally, it can be a function to determine whether the user has
+   * rights to execute this call. If the function is passed, the parameters
+   * will be the id of the user, and the username of the user if provided.
+   * Return `true` if user has right to execute this function.
+   *
+   * @type {((id: number, username?: string) => (boolean | Promise<boolean>)) | string | number | (string | number)[]}
+   * @memberof ICommandDecoratorOpts
+   */
+
+  onlyFor?: ((id: number, username?: string) => (boolean | Promise<boolean>)) | string | number | (string | number)[]
+
+  /**
+   * The name of the function in the class to handle unauthorized execution
+   * of commands. This function will be called when the `onlyFor` filter
+   * is set and the user executing the related function is not authorized.
+   *
+   * `onUnauthorizedCommand` by default.
+   *
+   * If the class has the function, the function will be called by these
+   * parameters:
+   *
+   * `commandName`, `userId`, `userName`, `context`
+   *
+   * **NOTE**: If the function is not found, the function will ignore the
+   * execution silently.
+   *
+   * @type {string}
+   * @memberof ICommandDecoratorOpts
+   */
+  unauthorizedExecHandlerName?: string
+
+  /**
    * The timeout value for the function.
    * If user does not respond to the message, the generator will be cancelled.
    *

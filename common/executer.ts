@@ -172,6 +172,59 @@ class Executer {
   }
 
   async fireOnCommand(instance: IBot, ctx: ContextMessageUpdate, initializer: InitSettings) {
+    const {
+      onlyFor,
+      unauthorizedExecHandlerName = 'onUnauthorizedCommand'
+    } = (initializer as any).opts
+
+    if (onlyFor) {
+      let { username = '', id } = ctx.from!
+      if (username.startsWith('@')) {
+        username = username.slice(1)
+      }
+
+      let isUnauthorized = false
+      if (typeof onlyFor === 'string' && username !== onlyFor) {
+        isUnauthorized = true
+      }
+      else if (typeof onlyFor === 'number' && id !== onlyFor) {
+        isUnauthorized = true
+      }
+      else if (typeof onlyFor === 'function') {
+        const result = await onlyFor(id, username)
+        isUnauthorized = !result
+      }
+      else if (Array.isArray(onlyFor)) {
+        let matched = false
+        for (const cond of onlyFor) {
+          if (typeof cond === 'string' && cond === username) {
+            matched = true
+            break
+          }
+          else if (typeof cond === 'number' && cond === id) {
+            matched = true
+            break
+          }
+          else {
+            throw new Error(`Unexpected type of user filter: "${typeof onlyFor}", only number or string expected`)
+          }
+        }
+
+        isUnauthorized = !matched
+      }
+
+      if (isUnauthorized) {
+        //@ts-ignore
+        const handler = instance[ unauthorizedExecHandlerName ] as Func | undefined
+
+        if (handler) {
+          handler.call(instance, initializer.name, id, username, ctx)
+        }
+
+        return
+      }
+    }
+
     if (this.askedInputInCommand.get(instance)) {
       return
     }
@@ -552,7 +605,6 @@ class Executer {
 
     return false
   }
-
 
   async replyMessage(messageObj: IReplyMessage, ctx: ContextMessageUpdate) {
     const {

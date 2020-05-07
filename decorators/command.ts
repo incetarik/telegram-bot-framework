@@ -3,6 +3,8 @@ import { INIT_MAP } from './common'
 const DEFAULTS: Partial<ICommandDecoratorOpts> = {
   emitsEvent: false,
   resetStates: [],
+  onlyFor: undefined,
+  unauthorizedExecHandlerName: 'onUnauthorizedCommand',
 }
 
 /**
