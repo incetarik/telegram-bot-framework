@@ -120,3 +120,9 @@ export interface IInputOpts {
    */
   didMessageSend?(message: Message): Promise<void>
 }
+
+export function isInputOptions(opts: any): opts is IInputOpts {
+  if (typeof opts !== 'object') { return false }
+  if (typeof opts.input !== 'string') { return false }
+  return true
+}
