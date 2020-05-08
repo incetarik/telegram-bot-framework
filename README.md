@@ -5,6 +5,10 @@ utilizes `Telegraf` library.
 This library provides set of decorators that could be used for a class and its
 properties and functions for the behavior of the bot.
 
+**NOTE**: To track last changes, please see the
+[`CHANGELOG`](`https://github.com/incetarik/telegram-bot-framework/blob/master/CHANGELOG.md`)
+file.
+
 - `@bot(settings?: IBotSettings)` class decorator: This decorator is used for
 a class to mark it is the logical implementations of the bot behaviors.
 The functions inside of the class will be used as `action` and `command`
