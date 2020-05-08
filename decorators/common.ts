@@ -9,8 +9,9 @@ export type InitSettings =
   | { name: string, type: 'start', handler(...args: any[]): AsyncGenerator | Promise<any> }
 
 export const SYM_EVENTS = Symbol('@@bot-events')
-export const SYM_CONTEXT = Symbol('@@bot-caller')
+export const SYM_CONTEXT = Symbol('@@bot-context')
 export const SYM_STATE = Symbol('@@bot-state')
+export const SYM_ONCE = Symbol('@@once')
 export const SYM_PROMISE_REPLACE = Symbol('@@replace')
 export const SYM_HEAR_EXEC_COUNTS = Symbol('@@bot-hears-counts')
 export const INIT_MAP: WeakMap<IBot, InitSettings[]> = new WeakMap()
