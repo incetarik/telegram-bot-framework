@@ -457,6 +457,10 @@ export function bot(opts?: IBotSettings) {
           if (!from) { return undefined }
           const { id } = from
           const userState = (state[ id ] || (state[ id ] = { [ SYM_HEAR_EXEC_COUNTS ]: { ...initialHearsExecutions } }))
+          if (!(SYM_HEAR_EXEC_COUNTS in userState)) {
+            //@ts-ignore
+            userState[ SYM_HEAR_EXEC_COUNTS ] = { ...initialHearsExecutions }
+          }
 
           //@ts-ignore
           return userState[ SYM_HEAR_EXEC_COUNTS ]
