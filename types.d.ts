@@ -144,7 +144,7 @@ declare interface IBotStateSettings {
   emitsEvent?: boolean
 }
 
-declare interface ICommandDecoratorOpts {
+declare interface ICommonDecoratorOpts {
   /**
    * The name of the command. This should match with the command name sent
    * by the client.
@@ -166,6 +166,44 @@ declare interface ICommandDecoratorOpts {
    */
   emitsEvent?: boolean
 
+  /**
+   * Indicates whether the function should be executed only once or not.
+   *
+   * @type {boolean}
+   * @memberof ICommonDecoratorOpts
+   */
+  onceForUser?: boolean
+
+  /**
+   * Indicates that the function may be executed once in selected interval.
+   * The unit is in milliseconds.
+   *
+   * @type {number}
+   * @memberof ICommonDecoratorOpts
+   */
+  onceForUserIn?: number
+
+  /**
+   * Indicates whether the function may be executed once during the bot's
+   * lifetime.
+   *
+   * @type {boolean}
+   * @memberof ICommonDecoratorOpts
+   */
+  onceForBot?: boolean
+
+  /**
+   * Indicates that the function may be executed once in selected interval
+   * in bot's lifetime.
+   * The unit is in milliseconds.
+   *
+   * @type {number}
+   * @memberof ICommonDecoratorOpts
+   */
+  onceForBotIn?: number
+}
+
+declare interface ICommandDecoratorOpts extends ICommonDecoratorOpts {
   /**
    * Resets/removes the states when the command is executed again during
    * another command is processing.
@@ -190,7 +228,6 @@ declare interface ICommandDecoratorOpts {
    * @type {((id: number, username?: string) => (boolean | Promise<boolean>)) | string | number | (string | number)[]}
    * @memberof ICommandDecoratorOpts
    */
-
   onlyFor?: ((id: number, username?: string) => (boolean | Promise<boolean>)) | string | number | (string | number)[]
 
   /**
@@ -231,26 +268,7 @@ declare interface ICommandDecoratorOpts {
   timeoutMessage?: string
 }
 
-declare interface IActionDecoratorOpts {
-  /**
-   * Name alias of the function.
-   * If given, the `callback_data` should be equal to the given name, not the
-   * function name. Otherwise, this is the same with function name by default.
-   *
-   * @type {string}
-   * @memberof IActionDecoratorOpts
-   */
-  name?: string
-
-  /**
-   * Indicates whether the function call emits an event or not.
-   *
-   * `false` by default.
-   *
-   * @type {boolean}
-   * @memberof IActionDecoratorOpts
-   */
-  emitsEvent?: boolean
+declare interface IActionDecoratorOpts extends ICommonDecoratorOpts {
 }
 
 declare interface IHearsDecoratorOpts {
@@ -320,4 +338,40 @@ declare interface IHearsDecoratorOpts {
    * @memberof IHearsDecoratorOpts
    */
   othersMayHear?: boolean
+
+  /**
+   * Indicates whether the function should be executed only once or not.
+   *
+   * @type {boolean}
+   * @memberof ICommonDecoratorOpts
+   */
+  onceForUser?: boolean
+
+  /**
+   * Indicates that the function may be executed once in selected interval.
+   * The unit is in milliseconds.
+   *
+   * @type {number}
+   * @memberof ICommonDecoratorOpts
+   */
+  onceForUserIn?: number
+
+  /**
+   * Indicates whether the function may be executed once during the bot's
+   * lifetime.
+   *
+   * @type {boolean}
+   * @memberof ICommonDecoratorOpts
+   */
+  onceForBot?: boolean
+
+  /**
+   * Indicates that the function may be executed once in selected interval
+   * in bot's lifetime.
+   * The unit is in milliseconds.
+   *
+   * @type {number}
+   * @memberof ICommonDecoratorOpts
+   */
+  onceForBotIn?: number
 }

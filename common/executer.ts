@@ -1,17 +1,17 @@
+import { compile as compileTemplate } from 'handlebars'
 import { ContextMessageUpdate } from 'telegraf'
 import { IncomingMessage, Message } from 'telegraf/typings/telegram-types'
-import { compile as compileTemplate } from 'handlebars'
 
 import { IBot } from '../decorators'
 import {
   InitSettings, isGenerator, SYM_CONTEXT, SYM_EVENTS, SYM_HEAR_EXEC_COUNTS,
-  SYM_PROMISE_REPLACE, SYM_STATE
+  SYM_ONCE, SYM_PROMISE_REPLACE, SYM_STATE
 } from '../decorators/common'
 import { _ } from '../translations'
 import { IInputOpts, isInputOptions } from './input-opts'
+import { INotificationInfo, isNotificationInfo } from './notify-users'
 import { IReplyMessage } from './reply-message'
 import { WaitingStates } from './waiting-states'
-import { INotificationInfo, isNotificationInfo } from './notify-users'
 
 type IIteratorOpts = {
   timeout?: number,
@@ -25,6 +25,7 @@ class Executer {
   private askedInputInCommand: WeakMap<any, boolean> = new WeakMap()
   private executingCommand: WeakMap<any, { genOrPromise: AsyncGenerator | Promise<any>, initializer: InitSettings }> = new WeakMap()
   private executingHear: WeakMap<any, boolean> = new WeakMap()
+  private onceExecutions: WeakMap<any, any> = new WeakMap()
 
   async fireGeneric(instance: IBot, ctx: ContextMessageUpdate, initializer: InitSettings) {
     const genOrPromise = initializer.handler.call(instance, ctx)
@@ -38,6 +39,10 @@ class Executer {
   }
 
   async fireOnCommand(instance: IBot, ctx: ContextMessageUpdate, initializer: InitSettings) {
+    if (!this.canFire(instance, ctx, initializer)) {
+      return
+    }
+
     const {
       onlyFor,
       unauthorizedExecHandlerName = 'onUnauthorizedCommand'
@@ -179,6 +184,10 @@ class Executer {
   }
 
   async fireOnAction(instance: IBot, ctx: ContextMessageUpdate, initializer: InitSettings) {
+    if (!this.canFire(instance, ctx, initializer)) {
+      return
+    }
+
     const command = this.executingCommand.get(instance)
 
     //@ts-ignore
@@ -195,6 +204,10 @@ class Executer {
   }
 
   async fireOnHears(instance: IBot, ctx: ContextMessageUpdate, initializer: InitSettings) {
+    if (!this.canFire(instance, ctx, initializer)) {
+      return
+    }
+
     //@ts-ignore
     const { opts, handler } = initializer
     //@ts-ignore
@@ -550,6 +563,105 @@ class Executer {
       type,
       data
     })
+  }
+
+  private canFire(instance: any, ctx: ContextMessageUpdate, initializer: InitSettings) {
+    const { from } = ctx
+    if (!from) { return false }
+
+    const { name, type } = initializer
+
+    if ('opts' in initializer) {
+      const { opts } = initializer
+      const { onceForBot, onceForBotIn } = opts
+
+      if (onceForBot) {
+        let settings = this.onceExecutions.get(instance)
+        if (!settings) {
+          this.onceExecutions.set(instance, settings = {})
+        }
+
+        if (settings[ name ]) {
+          return false
+        }
+
+        settings[ name ] = true
+        return true
+      }
+      else if (onceForBotIn) {
+        let settings = this.onceExecutions.get(instance)
+        if (!settings) {
+          this.onceExecutions.set(instance, settings = {})
+        }
+
+        const now = (new Date()).getTime()
+        if (name in settings) {
+          const execTime = settings[ name ]
+          if (now > execTime) {
+            settings[ name ] = now + onceForBotIn
+            return true
+          }
+          else {
+            return false
+          }
+        }
+        else {
+          settings[ name ] = now + onceForBotIn
+          return true
+        }
+      }
+
+      if ('onceForUser' in opts || 'onceForUserIn' in opts) {
+        const { onceForUser, onceForUserIn } = opts
+        const state = instance[ SYM_STATE ] as Dictionary<{ value: any, props: IBotStateSettings }>
+        const userSettings = (
+          state[ SYM_ONCE as any as string ]
+          || (state[ SYM_ONCE as any as string ] = {
+            value: {} as Dictionary<Dictionary<{ interval: number }>>,
+            props: {}
+          })
+        ).value
+
+        if (onceForUser) {
+          if (!(type in userSettings)) {
+            userSettings[ type ] = {}
+          }
+
+          const funTypes = userSettings[ type ]
+          if (!(name in funTypes)) {
+            funTypes[ name ] = Infinity
+            return true
+          }
+          else {
+            return false
+          }
+        }
+        else if (onceForUserIn) {
+          if (!(type in userSettings)) {
+            userSettings[ type ] = {}
+          }
+
+          const now = new Date().getTime()
+          const funTypes = userSettings[ type ]
+          if (!(name in funTypes)) {
+            funTypes[ name ] = now + onceForUserIn
+            return true
+          }
+          else {
+            const allowanceEpoch = funTypes[ name ]
+            if (now > allowanceEpoch) {
+              funTypes[ name ] = now + onceForUserIn
+              return true
+            }
+            else {
+              return false
+            }
+          }
+        }
+      }
+    }
+
+    return true
   }
 }
 
