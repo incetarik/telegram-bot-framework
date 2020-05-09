@@ -1,3 +1,25 @@
+# 2.1.1
+## Added
+- `userBlockMessage`, `botBlockMessage`, `blockMessage` properties to decorator
+settings object. If the `userBlockMessage` or `botBlockMessage` is empty, then
+`blockMessage` will be used instead. Only the related message could be used.
+These properties have type of string or a function that akes four parameters
+which are `type` of the call, `name` of the call, `id` of the user and optional
+`username`.
+If the message is a string, and matches a key in translations, the translation
+value will be used. If the message is a function, then the function will be
+executed with the instance of the class (`this` will refer to class). Hence, if
+you don't want to write function there, you could either have external function
+or write, for example, `BotClass.prototype.aLogFunction`, since you can reach
+the function through the prototype and it will still be called by the instance
+of the class.
+
+- Event messages for these blockings.
+
+## Changed
+- Translation function `_` now returns `string | undefined`.
+
+---
 # 2.1.0
 ## Added
 - `onceForUser`, `onceForUserIn`, `onceForBot`, `onceForBotIn` properties
