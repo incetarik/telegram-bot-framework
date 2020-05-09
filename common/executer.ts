@@ -4,8 +4,8 @@ import { IncomingMessage, Message } from 'telegraf/typings/telegram-types'
 
 import { IBot } from '../decorators'
 import {
-  InitSettings, isGenerator, SYM_CONTEXT, SYM_EVENTS, SYM_HEAR_EXEC_COUNTS,
-  SYM_ONCE, SYM_PROMISE_REPLACE, SYM_STATE
+  ActionInfo, CommandInfo, HearsInfo, InitInfo, isGenerator, SYM_CONTEXT,
+  SYM_EVENTS, SYM_HEAR_EXEC_COUNTS, SYM_ONCE, SYM_PROMISE_REPLACE, SYM_STATE
 } from '../decorators/common'
 import { _ } from '../translations'
 import { IInputOpts, isInputOptions } from './input-opts'
@@ -23,11 +23,11 @@ type IIteratorOpts = {
 
 class Executer {
   private askedInputInCommand: WeakMap<any, boolean> = new WeakMap()
-  private executingCommand: WeakMap<any, { genOrPromise: AsyncGenerator | Promise<any>, initializer: InitSettings }> = new WeakMap()
+  private executingCommand: WeakMap<any, { genOrPromise: AsyncGenerator | Promise<any>, initializer: CommandInfo }> = new WeakMap()
   private executingHear: WeakMap<any, boolean> = new WeakMap()
   private onceExecutions: WeakMap<any, any> = new WeakMap()
 
-  async fireGeneric(instance: IBot, ctx: ContextMessageUpdate, initializer: InitSettings) {
+  async fireGeneric(instance: IBot, ctx: ContextMessageUpdate, initializer: InitInfo) {
     const genOrPromise = initializer.handler.call(instance, ctx)
 
     if (isGenerator(genOrPromise)) {
@@ -38,7 +38,7 @@ class Executer {
     }
   }
 
-  async fireOnCommand(instance: IBot, ctx: ContextMessageUpdate, initializer: InitSettings) {
+  async fireOnCommand(instance: IBot, ctx: ContextMessageUpdate, initializer: CommandInfo) {
     if (!this.canFire(instance, ctx, initializer)) {
       return
     }
@@ -183,7 +183,7 @@ class Executer {
     return returnValue
   }
 
-  async fireOnAction(instance: IBot, ctx: ContextMessageUpdate, initializer: InitSettings) {
+  async fireOnAction(instance: IBot, ctx: ContextMessageUpdate, initializer: ActionInfo) {
     if (!this.canFire(instance, ctx, initializer)) {
       return
     }
@@ -203,7 +203,7 @@ class Executer {
     return value
   }
 
-  async fireOnHears(instance: IBot, ctx: ContextMessageUpdate, initializer: InitSettings) {
+  async fireOnHears(instance: IBot, ctx: ContextMessageUpdate, initializer: HearsInfo) {
     if (!this.canFire(instance, ctx, initializer)) {
       return
     }
@@ -565,7 +565,7 @@ class Executer {
     })
   }
 
-  private canFire(instance: any, ctx: ContextMessageUpdate, initializer: InitSettings) {
+  private canFire(instance: any, ctx: ContextMessageUpdate, initializer: InitInfo) {
     const { from } = ctx
     if (!from) { return false }
 
@@ -667,28 +667,28 @@ class Executer {
 
 const executer = new Executer()
 
-export function handleActions(instance: any, initializer: InitSettings) {
+export function handleActions(instance: any, initializer: InitInfo) {
   return async function (ctx: ContextMessageUpdate) {
     instance[ SYM_CONTEXT ] = ctx
-    await executer.fireOnAction(instance, ctx, initializer)
+    await executer.fireOnAction(instance, ctx, initializer as ActionInfo)
   }
 }
 
-export function handleCommand(instance: any, initializer: InitSettings) {
+export function handleCommand(instance: any, initializer: InitInfo) {
   return async function (ctx: ContextMessageUpdate) {
     instance[ SYM_CONTEXT ] = ctx
-    await executer.fireOnCommand(instance, ctx, initializer)
+    await executer.fireOnCommand(instance, ctx, initializer as CommandInfo)
   }
 }
 
-export function handleHears(instance: any, initializer: InitSettings) {
+export function handleHears(instance: any, initializer: InitInfo) {
   return async function (ctx: ContextMessageUpdate) {
     instance[ SYM_CONTEXT ] = ctx
-    await executer.fireOnHears(instance, ctx, initializer)
+    await executer.fireOnHears(instance, ctx, initializer as HearsInfo)
   }
 }
 
-export function handleGeneric(instance: any, initializer: InitSettings) {
+export function handleGeneric(instance: any, initializer: InitInfo) {
   return async function (ctx: ContextMessageUpdate) {
     instance[ SYM_CONTEXT ] = ctx
     await executer.fireGeneric(instance, ctx, initializer)

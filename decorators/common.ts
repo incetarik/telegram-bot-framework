@@ -1,12 +1,14 @@
 import { IBot } from './bot'
 import { _ } from '../translations'
 
-export type InitSettings =
-  { name: string, type: 'command', handler(...args: any[]): AsyncGenerator | Promise<any>, opts: ICommandDecoratorOpts }
-  | { name: string, type: 'action', handler(...args: any[]): AsyncGenerator | Promise<any>, opts: IActionDecoratorOpts }
-  | { name: string, type: 'hears', handler(...args: any[]): AsyncGenerator | Promise<any>, opts: IHearsDecoratorOpts, match: RegExp }
-  | { name: string, type: 'help', handler(...args: any[]): AsyncGenerator | Promise<any> }
-  | { name: string, type: 'start', handler(...args: any[]): AsyncGenerator | Promise<any> }
+export type DecInfo = { name: string, handler(...args: any[]): AsyncGenerator | Promise<any> }
+export type HelpInfo = DecInfo & { type: 'help' }
+export type StartInfo = DecInfo & { type: 'start' }
+export type ActionInfo = DecInfo & { type: 'action', opts: IActionDecoratorOpts }
+export type CommandInfo = DecInfo & { type: 'command', opts: ICommandDecoratorOpts }
+export type HearsInfo = DecInfo & { type: 'hears', opts: IHearsDecoratorOpts, match: RegExp }
+
+export type InitInfo = CommandInfo | ActionInfo | HelpInfo | StartInfo | HearsInfo
 
 export const SYM_EVENTS = Symbol('@@bot-events')
 export const SYM_CONTEXT = Symbol('@@bot-context')
@@ -14,7 +16,7 @@ export const SYM_STATE = Symbol('@@bot-state')
 export const SYM_ONCE = Symbol('@@once')
 export const SYM_PROMISE_REPLACE = Symbol('@@replace')
 export const SYM_HEAR_EXEC_COUNTS = Symbol('@@bot-hears-counts')
-export const INIT_MAP: WeakMap<IBot, InitSettings[]> = new WeakMap()
+export const INIT_MAP: WeakMap<IBot, InitInfo[]> = new WeakMap()
 
 /**
  * Indicates whether the given object is generator-like or not.

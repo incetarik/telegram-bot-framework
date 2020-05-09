@@ -59,8 +59,8 @@ export function makeNotification(notificationInfo: INotificationInfo): INotifica
 export function makeNotification(format: string, notify: (string | number | (string | number)[]), extra?: ExtraEditMessage): INotificationInfo
 export function makeNotification(info: INotificationInfo): INotificationInfo
 export function makeNotification(format: string | INotificationInfo, notify?: (string | number | (string | number)[]), extra?: ExtraEditMessage): INotificationInfo {
-if (isNotificationInfo(format)) {
-  return format
+  if (isNotificationInfo(format)) {
+    return format
   }
 
   return {
