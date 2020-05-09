@@ -175,6 +175,45 @@ declare interface ICommonDecoratorOpts {
   onceForUser?: boolean
 
   /**
+   * The message to send to the user if user is prevented from executing the
+   * function due to the `onceForUser(In)`.
+   *
+   * @type {string | ((type: 'action' | 'hears' | 'command', name: string, userId: number, username?: string) => string | Promise<string>)}
+   * @memberof ICommonDecoratorOpts
+   */
+  userBlockMessage?: string | ((type: 'action' | 'hears' | 'command', name: string, userId: number, username?: string) => string | Promise<string>)
+
+  /**
+   * The block message to send to the user if user is prevented from executing
+   * the function due to the `onceFor(User|Bot)(In)`.
+   *
+   * @type {string | ((type: 'action' | 'hears' | 'command', name: string, userId: number, username?: string) => string | Promise<string>)}
+   * @memberof ICommonDecoratorOpts
+   */
+  blockMessage?: string | ((type: 'action' | 'hears' | 'command', name: string, userId: number, username?: string) => string | Promise<string>)
+
+  /**
+   * The message to send to the user if user is prevented from executing the
+   * function due to the `onceForBot(In)`.
+   *
+   * @type {string | ((type: 'action' | 'hears' | 'command', name: string, userId: number, username?: string) => string | Promise<string>)}
+   * @memberof ICommonDecoratorOpts
+   */
+  botBlockMessage?: string | ((type: 'action' | 'hears' | 'command', name: string, userId: number, username?: string) => string | Promise<string>)
+
+  /**
+   * The `Extra` of the block message for both of the messages, or a function
+   * to execute to get the extra.
+   *
+   * If function is passed, the function will be called with these parameters:
+   * `type`, `name`, `userid`, `username`
+   *
+   * @type {*}
+   * @memberof IHearsDecoratorOpts
+   */
+  blockMessageExtra?: any
+
+  /**
    * Indicates that the function may be executed once in selected interval.
    * The unit is in milliseconds.
    *
@@ -374,4 +413,43 @@ declare interface IHearsDecoratorOpts {
    * @memberof ICommonDecoratorOpts
    */
   onceForBotIn?: number
+
+  /**
+ * The message to send to the user if user is prevented from executing the
+ * function due to the `onceForUser(In)`.
+ *
+ * @type {string | ((type: 'action' | 'hears' | 'command', name: string, userId: number, username?: string) => string | Promise<string>)}
+ * @memberof ICommonDecoratorOpts
+ */
+  userBlockMessage?: string | ((type: 'action' | 'hears' | 'command', name: string, userId: number, username?: string) => string | Promise<string>)
+
+  /**
+   * The message to send to the user if user is prevented from executing the
+   * function due to the `onceForBot(In)`.
+   *
+   * @type {string | ((type: 'action' | 'hears' | 'command', name: string, userId: number, username?: string) => string | Promise<string>)}
+   * @memberof ICommonDecoratorOpts
+   */
+  botBlockMessage?: string | ((type: 'action' | 'hears' | 'command', name: string, userId: number, username?: string) => string | Promise<string>)
+
+  /**
+   * The block message to send to the user if user is prevented from executing
+   * the function due to the `onceFor(User|Bot)(In)`.
+   *
+   * @type {string | ((type: 'action' | 'hears' | 'command', name: string, userId: number, username?: string) => string | Promise<string>)}
+   * @memberof ICommonDecoratorOpts
+   */
+  blockMessage?: string | ((type: 'action' | 'hears' | 'command', name: string, userId: number, username?: string) => string | Promise<string>)
+
+  /**
+   * The `Extra` of the block message for both of the messages, or a function
+   * to execute to get the extra.
+   *
+   * If function is passed, the function will be called with these parameters:
+   * `type`, `name`, `userid`, `username`
+   *
+   * @type {*}
+   * @memberof IHearsDecoratorOpts
+   */
+  blockMessageExtra?: any
 }

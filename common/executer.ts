@@ -1,6 +1,6 @@
 import { compile as compileTemplate } from 'handlebars'
 import { ContextMessageUpdate } from 'telegraf'
-import { IncomingMessage, Message } from 'telegraf/typings/telegram-types'
+import { IncomingMessage, Message, ExtraEditMessage, User } from 'telegraf/typings/telegram-types'
 
 import { IBot } from '../decorators'
 import {
@@ -39,7 +39,7 @@ class Executer {
   }
 
   async fireOnCommand(instance: IBot, ctx: ContextMessageUpdate, initializer: CommandInfo) {
-    if (!this.canFire(instance, ctx, initializer)) {
+    if (!(await this.canFire(instance, ctx, initializer))) {
       return
     }
 
@@ -184,7 +184,7 @@ class Executer {
   }
 
   async fireOnAction(instance: IBot, ctx: ContextMessageUpdate, initializer: ActionInfo) {
-    if (!this.canFire(instance, ctx, initializer)) {
+    if (!(await this.canFire(instance, ctx, initializer))) {
       return
     }
 
@@ -204,7 +204,7 @@ class Executer {
   }
 
   async fireOnHears(instance: IBot, ctx: ContextMessageUpdate, initializer: HearsInfo) {
-    if (!this.canFire(instance, ctx, initializer)) {
+    if (!(await this.canFire(instance, ctx, initializer))) {
       return
     }
 
@@ -565,7 +565,35 @@ class Executer {
     })
   }
 
-  private canFire(instance: any, ctx: ContextMessageUpdate, initializer: InitInfo) {
+  private async sendBlockedMessageIfNeeded(instance: any, messageOrKey: string | Function, ctx: ContextMessageUpdate, initializer: InitInfo, user: User) {
+    let message: string
+    if (typeof messageOrKey === 'string') {
+      message = messageOrKey
+    }
+    else if (typeof messageOrKey === 'function') {
+      message = await messageOrKey.call(instance, initializer.type, initializer.name, user.id, user.username)
+    }
+    else {
+      throw new Error('The type should be string or function')
+    }
+
+    message = _(message, user.language_code ?? 'en', message)!
+    let extra: ExtraEditMessage | undefined
+    if ('opts' in initializer) {
+      const { blockMessageExtra } = initializer.opts
+
+      if (typeof blockMessageExtra === 'function') {
+        extra = await blockMessageExtra.call(instance, initializer.type, initializer.name, user.id, user.username)
+      }
+      else if (typeof blockMessageExtra === 'object') {
+        extra = blockMessageExtra
+      }
+    }
+
+    await this.replyMessage({ message, extra }, ctx)
+  }
+
+  private async canFire(instance: any, ctx: ContextMessageUpdate, initializer: InitInfo) {
     const { from } = ctx
     if (!from) { return false }
 
@@ -573,7 +601,7 @@ class Executer {
 
     if ('opts' in initializer) {
       const { opts } = initializer
-      const { onceForBot, onceForBotIn } = opts
+      const { onceForBot, onceForBotIn, blockMessage, botBlockMessage = blockMessage } = opts
 
       if (onceForBot) {
         let settings = this.onceExecutions.get(instance)
@@ -582,6 +610,18 @@ class Executer {
         }
 
         if (settings[ name ]) {
+          this.emit(instance, 'perm.exec', 'i', {
+            type: initializer.type,
+            name: initializer.name,
+            id: from.id,
+            username: from.username,
+            blocking: 'onceForBot'
+          })
+
+          if (typeof botBlockMessage === 'string' || typeof botBlockMessage === 'function') {
+            await this.sendBlockedMessageIfNeeded(instance, botBlockMessage, ctx, initializer, from)
+          }
+
           return false
         }
 
@@ -602,6 +642,19 @@ class Executer {
             return true
           }
           else {
+            this.emit(instance, 'perm.exec', 'i', {
+              type: initializer.type,
+              name: initializer.name,
+              id: from.id,
+              username: from.username,
+              blocking: 'onceForBotIn',
+              remaining: now - execTime
+            })
+
+            if (typeof botBlockMessage === 'string' || typeof botBlockMessage === 'function') {
+              await this.sendBlockedMessageIfNeeded(instance, botBlockMessage, ctx, initializer, from)
+            }
+
             return false
           }
         }
@@ -612,7 +665,7 @@ class Executer {
       }
 
       if ('onceForUser' in opts || 'onceForUserIn' in opts) {
-        const { onceForUser, onceForUserIn } = opts
+        const { onceForUser, onceForUserIn, blockMessage, userBlockMessage = blockMessage } = opts
         const state = instance[ SYM_STATE ] as Dictionary<{ value: any, props: IBotStateSettings }>
         const userSettings = (
           state[ SYM_ONCE as any as string ]
@@ -633,6 +686,18 @@ class Executer {
             return true
           }
           else {
+            this.emit(instance, 'perm.exec', 'i', {
+              type: initializer.type,
+              name: initializer.name,
+              id: from.id,
+              username: from.username,
+              blocking: 'onceForUser'
+            })
+
+            if (typeof userBlockMessage === 'string' || typeof userBlockMessage === 'function') {
+              await this.sendBlockedMessageIfNeeded(instance, userBlockMessage, ctx, initializer, from)
+            }
+
             return false
           }
         }
@@ -654,6 +719,19 @@ class Executer {
               return true
             }
             else {
+              this.emit(instance, 'perm.exec', 'i', {
+                type: initializer.type,
+                name: initializer.name,
+                id: from.id,
+                username: from.username,
+                blocking: 'onceForUserIn',
+                remaining: now - allowanceEpoch
+              })
+
+              if (typeof userBlockMessage === 'string' || typeof userBlockMessage === 'function') {
+                await this.sendBlockedMessageIfNeeded(instance, userBlockMessage, ctx, initializer, from)
+              }
+
               return false
             }
           }
