@@ -11,7 +11,7 @@ const translations: { [lang: string]: { [key: string]: string } } = {}
  * @param {string} [defaultValue] Default value if the key is not found.
  * @returns The translation value or default value.
  */
-export function _<TSource = any, TLangs extends string = string>(key: keyof TSource, lang: TLangs, defaultValue?: string) {
+export function _<TSource = any, TLangs extends string = string>(key: keyof TSource, lang: TLangs, defaultValue?: string): string | undefined {
   if (!key) { return defaultValue }
   if (lang in translations) {
     const tr = translations[ lang ]

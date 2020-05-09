@@ -306,7 +306,7 @@ class Executer {
 
       const result = await func.apply(instance, args)
       if (result instanceof Error) {
-        ctx.reply(_(result.message, ctx.from?.language_code || 'en', result.message))
+        ctx.reply(_(result.message, ctx.from?.language_code || 'en', result.message)!)
         return result
       }
 
@@ -317,7 +317,7 @@ class Executer {
         if (timeout) {
           timeoutId = setTimeout(() => {
             result.return(new Error(timeoutMessage))
-            ctx.reply(_(timeoutMessage, ctx.from?.language_code || 'en', timeoutMessage))
+            ctx.reply(_(timeoutMessage, ctx.from?.language_code || 'en', timeoutMessage)!)
           }, timeout)
         }
 
@@ -438,7 +438,7 @@ class Executer {
 
         if (!userMessage.text) {
           if (matchError) {
-            await this.replyMessage({ message: _(matchError, ctx.from?.language_code || 'en', matchError) }, ctx)
+            await this.replyMessage({ message: _(matchError, ctx.from?.language_code || 'en', matchError)! }, ctx)
           }
 
           continue
@@ -449,7 +449,7 @@ class Executer {
           return text
         }
         else if (matchError && retry > 0) {
-          let message = _(matchError, ctx.from?.language_code || 'en', matchError)
+          let message = _(matchError, ctx.from?.language_code || 'en', matchError)!
           await this.replyMessage({ message, extra: matchErrorExtra }, ctx)
         }
       }
