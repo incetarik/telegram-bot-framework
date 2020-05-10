@@ -1,3 +1,10 @@
+# 2.1.2
+## Added
+- Error handling for any case (`hears`, `action`, `command`) by default, only
+if `onError` function is found in instance. The error will be re-thrown again
+if the function is not found.
+
+---
 # 2.1.1
 ## Added
 - `userBlockMessage`, `botBlockMessage`, `blockMessage` properties to decorator

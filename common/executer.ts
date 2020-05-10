@@ -748,28 +748,64 @@ const executer = new Executer()
 export function handleActions(instance: any, initializer: InitInfo) {
   return async function (ctx: ContextMessageUpdate) {
     instance[ SYM_CONTEXT ] = ctx
-    await executer.fireOnAction(instance, ctx, initializer as ActionInfo)
+    try {
+      await executer.fireOnAction(instance, ctx, initializer as ActionInfo)
+    }
+    catch (error) {
+      if (typeof error === 'string') { error = new Error(error) }
+      if (typeof instance.onError === 'function') { instance.onError(error) }
+      else {
+        throw error
+      }
+    }
   }
 }
 
 export function handleCommand(instance: any, initializer: InitInfo) {
   return async function (ctx: ContextMessageUpdate) {
     instance[ SYM_CONTEXT ] = ctx
-    await executer.fireOnCommand(instance, ctx, initializer as CommandInfo)
+    try {
+      await executer.fireOnCommand(instance, ctx, initializer as CommandInfo)
+    }
+    catch (error) {
+      if (typeof error === 'string') { error = new Error(error) }
+      if (typeof instance.onError === 'function') { instance.onError(error) }
+      else {
+        throw error
+      }
+    }
   }
 }
 
 export function handleHears(instance: any, initializer: InitInfo) {
   return async function (ctx: ContextMessageUpdate) {
     instance[ SYM_CONTEXT ] = ctx
-    await executer.fireOnHears(instance, ctx, initializer as HearsInfo)
+    try {
+      await executer.fireOnHears(instance, ctx, initializer as HearsInfo)
+    }
+    catch (error) {
+      if (typeof error === 'string') { error = new Error(error) }
+      if (typeof instance.onError === 'function') { instance.onError(error) }
+      else {
+        throw error
+      }
+    }
   }
 }
 
 export function handleGeneric(instance: any, initializer: InitInfo) {
   return async function (ctx: ContextMessageUpdate) {
     instance[ SYM_CONTEXT ] = ctx
-    await executer.fireGeneric(instance, ctx, initializer)
+    try {
+      await executer.fireGeneric(instance, ctx, initializer)
+    }
+    catch (error) {
+      if (typeof error === 'string') { error = new Error(error) }
+      if (typeof instance.onError === 'function') { instance.onError(error) }
+      else {
+        throw error
+      }
+    }
   }
 }
 
