@@ -1,5 +1,5 @@
 export { WaitingStates } from './waiting-states'
 export { handleActions, handleCommand, handleHears } from './executer'
 export { isInputOptions, IInputOpts, makeInputObject } from './input-opts'
-export { isReplyMessage, IReplyMessage } from './reply-message'
+export { isReplyMessage, IReplyMessage, IImageReplyMessage, isImageReplyMessage, makeImageObject } from './reply-message'
 export { isNotificationInfo, INotificationInfo, makeNotification } from './notify-users'
