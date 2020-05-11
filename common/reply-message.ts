@@ -6,22 +6,23 @@ import { ExtraEditMessage } from 'telegraf/typings/telegram-types'
  * @export
  * @interface IReplyMessage
  */
-export interface IReplyMessage {
+export interface IReplyMessage<TMessage = string, TExtra = ExtraEditMessage> {
   /**
    * The message to send to the user.
    *
-   * @type {string}
+   * @type {TMessage}
    * @memberof IReplyMessage
    */
-  message: string
+  message: TMessage
 
   /**
    * The extra of the message which will be sent to the user.
    *
-   * @type {ExtraEditMessage}
+   * @type {TExtra}
    * @memberof IReplyMessage
    */
-  extra?: ExtraEditMessage
+  extra?: TExtra
+}
 }
 
 export function isReplyMessage(obj: any): obj is IReplyMessage {
