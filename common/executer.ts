@@ -1,7 +1,13 @@
+import { existsSync, readFile } from 'fs'
 import { compile as compileTemplate } from 'handlebars'
+import { join } from 'path'
 import { ContextMessageUpdate } from 'telegraf'
-import { IncomingMessage, Message, ExtraEditMessage, User } from 'telegraf/typings/telegram-types'
+import {
+  ExtraEditMessage, ExtraPhoto, IncomingMessage, InputFile, Message,
+  MessageMedia, User
+} from 'telegraf/typings/telegram-types'
 
+import { IBotSettings } from '../create-bot'
 import { IBot } from '../decorators'
 import {
   ActionInfo, CommandInfo, HearsInfo, InitInfo, isGenerator, SYM_CONTEXT,
@@ -10,9 +16,8 @@ import {
 import { _ } from '../translations'
 import { IInputOpts, isInputOptions } from './input-opts'
 import { INotificationInfo, isNotificationInfo } from './notify-users'
-import { IReplyMessage } from './reply-message'
+import { IReplyMessage, isImageReplyMessage } from './reply-message'
 import { WaitingStates } from './waiting-states'
-import { IBotSettings } from '../create-bot'
 
 type IIteratorOpts = {
   timeout?: number,
@@ -485,6 +490,129 @@ class Executer {
       }
       else {
         return await ctx.reply(message, extra)
+      }
+    }
+    else if (isImageReplyMessage(messageObj)) {
+      const { source, caption } = messageObj.message
+      const { extra } = messageObj
+      let photoExtra = extra as ExtraPhoto
+
+      if (typeof caption === 'string') {
+        photoExtra = { ...(photoExtra || {}), caption }
+      }
+
+      if (typeof source === 'string') {
+        let file: InputFile
+        if (/^https?:\/\//.test(source)) {
+          const sections = source.split('/')
+          const filename = sections[ sections.length - 1 ]
+          file = { url: source, filename }
+
+          let timerId: any
+          if (this.botSettings.autoUpdateStatus) {
+            ctx.telegram.sendChatAction(ctx.chat!.id, 'upload_photo')
+            timerId = setTimeout(function actionSetter() {
+              ctx.telegram.sendChatAction(ctx.chat!.id, 'upload_photo')
+              timerId = setTimeout(actionSetter, 5000)
+            }, 5000);
+          }
+
+          const response = await ctx.replyWithPhoto(file, photoExtra)
+          if (timerId) { clearTimeout(timerId) }
+          return response
+        }
+        else {
+          let exactPath = source
+          if (source.startsWith('~/')) {
+            exactPath = join(process.cwd(), source.slice(2))
+          }
+
+          if (existsSync(exactPath)) {
+            return new Promise((resolve, reject) => {
+              readFile(exactPath, (error, source) => {
+                if (error) { reject(error) }
+                else {
+                  let timerId: any
+                  let resolver = resolve
+                  if (this.botSettings.autoUpdateStatus) {
+                    resolver = function (...args) {
+                      clearTimeout(timerId)
+                      resolve(...args)
+                    }
+
+                    ctx.telegram.sendChatAction(ctx.chat!.id, 'upload_photo')
+                    timerId = setTimeout(function actionSetter() {
+                      ctx.telegram.sendChatAction(ctx.chat!.id, 'upload_photo')
+                      timerId = setTimeout(actionSetter, 5000)
+                    }, 5000);
+                  }
+
+                  ctx.replyWithPhoto({ source }, photoExtra).then(resolver).catch(reject)
+                }
+              })
+            })
+          }
+          else {
+            throw new Error(`Path could not be found: "${source}"`)
+          }
+        }
+      }
+      else if (Array.isArray(source)) {
+        const mediaGallery = (source as any[]).map((it, index) => {
+          if (typeof it === 'string') {
+            if (!it.startsWith('http')) {
+              throw new Error(`Tried to send a media without URL: "${it}" at index: ${index}`)
+            }
+
+            return { type: 'photo', media: it, caption }
+          }
+          else if (Array.isArray(it)) {
+            const [ source, caption ] = it
+            if (!source.startsWith('http')) {
+              throw new Error(`Tried to send a media without URL: "${source}" at index: ${index}`)
+            }
+            return { type: 'photo', media: source, caption }
+          }
+          else if (typeof it === 'object') {
+            it.type = 'photo'
+            it.media = it.source
+            it.caption = it.caption || caption
+
+            if (!it.media.startsWith('http')) {
+              throw new Error(`Tried to send a media without URL: "${it.media}" at index: ${index}`)
+            }
+
+            return it
+          }
+        }) as MessageMedia[]
+
+        let timerId: any
+        if (this.botSettings.autoUpdateStatus) {
+          ctx.telegram.sendChatAction(ctx.chat!.id, 'upload_photo')
+          timerId = setTimeout(function actionSetter() {
+            ctx.telegram.sendChatAction(ctx.chat!.id, 'upload_photo')
+            timerId = setTimeout(actionSetter, 5000)
+          }, 5000);
+        }
+
+        while (mediaGallery.length >= 2) {
+          const currentGroup = mediaGallery.splice(0, 10)
+          await ctx.replyWithMediaGroup(currentGroup, extra as any)
+        }
+
+        if (mediaGallery.length) {
+          const [ photo ] = mediaGallery
+          if (photo.caption && photo.caption !== photoExtra.caption) {
+            photoExtra.caption = photo.caption
+          }
+
+          await ctx.replyWithPhoto({ source: photo.media }, photoExtra)
+        }
+
+        if (timerId) { clearTimeout(timerId) }
+      }
+      else {
+        throw new Error(`Invalid type for image source: "${typeof source}"`)
       }
     }
     else {

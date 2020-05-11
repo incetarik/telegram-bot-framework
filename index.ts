@@ -5,8 +5,10 @@ export {
   IInputOpts,
   INotificationInfo,
   IReplyMessage,
+  IImageReplyMessage,
   makeNotification as notify,
   makeInputObject as input,
+  makeImageObject as image,
 } from './common'
 
 export { IBotSettings } from './create-bot'
