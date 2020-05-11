@@ -4,7 +4,7 @@ import { Message } from 'telegraf/typings/telegram-types'
 
 import { WaitingStates } from '../common'
 import {
-  askForInput, handleActions, handleCommand, handleHears, replyMessage, handleGeneric
+  askForInput, handleActions, handleCommand, handleHears, replyMessage, handleGeneric, setExecuterBotSettings
 } from '../common/executer'
 import { IInputOpts } from "../common/input-opts"
 import { IReplyMessage } from "../common/reply-message"
@@ -253,6 +253,13 @@ export interface IBot {
   readonly $9?: string
 }
 
+const DEFAULT_BOT_SETTINGS: IBotSettings = {
+  autoUpdateStatus: true,
+  startFunction: 'start',
+  catchFunction: 'onError',
+  helpFunction: 'help',
+}
+
 /**
  * Marks a class as the bot implementation logic and prepares a platform for
  * other decorators such as `state()`, `action()` and `@command()`.
@@ -276,12 +283,16 @@ export interface IBot {
  * @returns
  */
 export function bot(opts?: IBotSettings) {
+  if (typeof opts !== 'object') {
+    opts = { ...DEFAULT_BOT_SETTINGS }
+  }
+
   const {
     helpFunction = 'help',
     startFunction = 'start',
     catchFunction = 'onError',
     use,
-  } = (opts || {});
+  } = opts;
 
   return function botClass<T extends { new(...args: any[]): {} }>(constr: T) {
     let isStartSet = false
@@ -305,6 +316,7 @@ export function bot(opts?: IBotSettings) {
         value() {
           if (initialized) { return false }
 
+          setExecuterBotSettings(opts!)
           const initArray = INIT_MAP.get(constr.prototype)
           if (initArray) {
             const commandsAdded: string[] = []

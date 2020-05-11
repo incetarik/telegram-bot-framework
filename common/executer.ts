@@ -12,6 +12,7 @@ import { IInputOpts, isInputOptions } from './input-opts'
 import { INotificationInfo, isNotificationInfo } from './notify-users'
 import { IReplyMessage } from './reply-message'
 import { WaitingStates } from './waiting-states'
+import { IBotSettings } from '../create-bot'
 
 type IIteratorOpts = {
   timeout?: number,
@@ -26,6 +27,7 @@ class Executer {
   private executingCommand: WeakMap<any, { genOrPromise: AsyncGenerator | Promise<any>, initializer: CommandInfo }> = new WeakMap()
   private executingHear: WeakMap<any, boolean> = new WeakMap()
   private onceExecutions: WeakMap<any, any> = new WeakMap()
+  private botSettings!: IBotSettings
 
   async fireGeneric(instance: IBot, ctx: ContextMessageUpdate, initializer: InitInfo) {
     const genOrPromise = initializer.handler.call(instance, ctx)
@@ -815,6 +817,10 @@ export function askForInput(inputObj: IInputOpts, ctx: ContextMessageUpdate) {
 
 export function replyMessage(messageObj: IReplyMessage, ctx: ContextMessageUpdate) {
   return executer.replyMessage(messageObj, ctx)
+}
+
+export function setExecuterBotSettings(botSettings: IBotSettings) {
+  executer[ 'botSettings' ] = botSettings
 }
 
 function _resetMatch(instance: any, a: any, b: any, c: any, d: any, e: any, f: any, g: any, h: any, i: any, j: any) {
