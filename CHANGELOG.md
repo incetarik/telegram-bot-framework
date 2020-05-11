@@ -1,3 +1,29 @@
+# 2.1.3
+## Added
+- `ISetActionMessage` interface for providing types for state updates.
+- `updateAction` or `updateStatus`, the same functionality for updating the
+chat action/status by the bot. These function also have second parameter
+indicating whether the `yield` should wait or not for 5 seconds.
+
+- `image` response creating function to use it with `yield` to send images back
+to the user. This function may have one string that could either be a path
+string of a local image or an URL string of an image. If this function has an
+object descripting the source of an image and the caption, the caption will
+also be set for the image. This function also has array taking overloads, the
+array passed to the function may contain any described above, in this case, the
+bot will send a gallery/media group to the user. If total count of the images
+are more than 10, then the bot will send images 10 by 10 as separate messages
+and the rest of the remainings.
+
+- `autoUpdateStatus: boolean` property for `@bot` settings which indicates that
+whether the bot should set chat action such as `uploading photo` automatically.
+- `IImageReplyMessage` interface for providing types for image responses.
+
+## Changed
+- `IReplyMessage` is now generic, taking two parameters of the type of the
+message and the type of the `Extra`.
+
+---
 # 2.1.2
 ## Added
 - Error handling for any case (`hears`, `action`, `command`) by default, only
