@@ -50,6 +50,17 @@ export interface IBotSettings extends TelegrafOptions {
   startFunction?: string
 
   /**
+   * Indicates that whether the status/action of the bot should be updated
+   * automatically when sending a photo, video or audio.
+   *
+   * `true` by default.
+   *
+   * @type {boolean}
+   * @memberof IBotSettings
+   */
+  autoUpdateStatus?: boolean
+
+  /**
    * Integrates another middlewares to the bot.
    *
    * @param {...Middleware<ContextMessageUpdate>[]} middlewares Middlewares.
