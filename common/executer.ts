@@ -16,7 +16,7 @@ import {
 import { _ } from '../translations'
 import { IInputOpts, isInputOptions } from './input-opts'
 import { INotificationInfo, isNotificationInfo } from './notify-users'
-import { IReplyMessage, isImageReplyMessage } from './reply-message'
+import { IReplyMessage, isImageReplyMessage, isSetActionMessage } from './reply-message'
 import { WaitingStates } from './waiting-states'
 
 type IIteratorOpts = {
@@ -390,6 +390,20 @@ class Executer {
       else if (isNotificationInfo(value)) {
         await this.notifyUsers(options.name!, options.type!, value, ctx)
         continue
+      }
+      else if (isSetActionMessage(value)) {
+        const { chat } = ctx
+        if (!chat) { continue }
+
+        const { action, wait } = value
+        await new Promise((resolve, reject) => {
+          ctx.telegram.sendChatAction(chat.id, action).catch(reject).then(() => {
+            if (wait) { setTimeout(resolve, 5000) }
+            else {
+              resolve()
+            }
+          })
+        })
       }
 
       if (typeof nextValue === 'string' && nextValue.startsWith('/')) {

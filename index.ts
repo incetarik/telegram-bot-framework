@@ -9,6 +9,8 @@ export {
   makeNotification as notify,
   makeInputObject as input,
   makeImageObject as image,
+  makeUpdateActionObject as updateAction,
+  makeUpdateStatusObject as updateStatus,
 } from './common'
 
 export { IBotSettings } from './create-bot'

@@ -1,4 +1,6 @@
-import { ExtraEditMessage, ExtraPhoto, ExtraMediaGroup } from 'telegraf/typings/telegram-types'
+import {
+  ChatAction, ExtraEditMessage, ExtraMediaGroup, ExtraPhoto
+} from 'telegraf/typings/telegram-types'
 
 /**
  * The reply message settings.
@@ -23,6 +25,8 @@ export interface IReplyMessage<TMessage = string, TExtra = ExtraEditMessage> {
    */
   extra?: TExtra
 }
+
+export interface ISetActionMessage { action: ChatAction, wait?: boolean }
 
 export interface IImageReplyMessage extends IReplyMessage<
   {
@@ -138,6 +142,38 @@ export function makeImageObject(source: any, captionOrExtra?: string | ExtraPhot
   }
 
   return { message: source, extra }
+}
+
+/**
+ * Creates a chat-action update message.
+ *
+ * @export
+ * @param {ChatAction} to New chat action to show for 5 seconds.
+ * @param {boolean} [wait=false] Indicates whether the `yield` should
+ * wait for 5 seconds.
+ * @returns {ISetActionMessage} SetActionMessage
+ */
+export function makeUpdateActionObject(to: ChatAction, wait = false): ISetActionMessage {
+  return { action: to, wait }
+}
+
+/**
+ * Creates a chat-action update message.
+ *
+ * @export
+ * @param {ChatAction} to New chat action to show for 5 seconds.
+ * @param {boolean} [wait=false] Indicates whether the `yield` should
+ * wait for 5 seconds.
+ * @returns {ISetActionMessage} SetActionMessage
+ */
+export function makeUpdateStatusObject(to: ChatAction, wait = false): ISetActionMessage {
+  return { action: to, wait }
+}
+
+export function isSetActionMessage(obj: any): obj is ISetActionMessage {
+  if (typeof obj !== 'object') { return false }
+  if (typeof obj.action !== 'string') { return false }
+  return true
 }
 
 export function isReplyMessage(obj: any): obj is IReplyMessage {
