@@ -317,6 +317,25 @@ export function bot(opts?: IBotSettings) {
           if (initialized) { return false }
 
           setExecuterBotSettings(opts!)
+
+          if (catchFunction in this) {
+            this.ref.catch(this[ catchFunction ].bind(this))
+          }
+
+          if (helpFunction in this) {
+            if (helpSet) {
+              throw new Error(`A help function is already set before: ${helpSet}`)
+            }
+
+            this.ref.help(handleGeneric(this, { handler: this.help, name: 'help', type: 'help' }))
+            helpSet = 'help'
+          }
+
+          if (startFunction in this) {
+            this.ref.start(handleGeneric(this, { handler: this.start, name: 'start', type: 'start' }))
+            isStartSet = true
+          }
+
           const initArray = INIT_MAP.get(constr.prototype)
           if (initArray) {
             const commandsAdded: string[] = []
@@ -376,24 +395,6 @@ export function bot(opts?: IBotSettings) {
             })
 
             INIT_MAP.delete(constr.prototype)
-          }
-
-          if (catchFunction in this) {
-            this.ref.catch(this[ catchFunction ].bind(this))
-          }
-
-          if (helpFunction in this) {
-            if (helpSet) {
-              throw new Error(`A help function is already set before: ${helpSet}`)
-            }
-
-            this.ref.help(handleGeneric(this, { handler: this.help, name: 'help', type: 'help' }))
-            helpSet = 'help'
-          }
-
-          if (startFunction in this) {
-            this.ref.start(handleGeneric(this, { handler: this.start, name: 'start', type: 'start' }))
-            isStartSet = true
           }
 
           if (typeof use !== 'undefined') {
