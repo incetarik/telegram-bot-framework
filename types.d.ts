@@ -365,6 +365,17 @@ declare interface IHearsDecoratorOpts {
   executeDuringCommand?: boolean
 
   /**
+   * Indicates whether to ignore any message that matchs with given condition
+   * but not when it starts with a slash (`/`) indicating that is a command.
+   *
+   * `true` by default.
+   *
+   * @type {boolean}
+   * @memberof IHearsDecoratorOpts
+   */
+  ignoreCommands?: boolean
+
+  /**
    * Indicates whether the other `@hears` functions may be executed during the
    * execution of this hears function.
    *

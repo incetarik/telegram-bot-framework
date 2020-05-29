@@ -896,6 +896,20 @@ class Executer {
           }
         }
       }
+
+      const { message } = ctx
+      if (message) {
+        const { text } = message
+        if (text && text.startsWith('/')) {
+          if (type === 'hears') {
+            const { ignoreCommands = true } = opts as IHearsDecoratorOpts
+            if (ignoreCommands) {
+              return false
+            }
+          }
+        }
+      }
+
     }
 
     return true
