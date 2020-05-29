@@ -11,7 +11,7 @@ import { IBotSettings } from '../create-bot'
 import { IBot } from '../decorators'
 import {
   ActionInfo, CommandInfo, HearsInfo, InitInfo, isGenerator, SYM_CONTEXT,
-  SYM_EVENTS, SYM_HEAR_EXEC_COUNTS, SYM_ONCE, SYM_PROMISE_REPLACE, SYM_STATE
+  SYM_EVENTS, SYM_HEAR_EXEC_COUNTS, SYM_ONCE, SYM_PROMISE_REPLACE, SYM_STATE, isPromise
 } from '../decorators/common'
 import { _ } from '../translations'
 import { IInputOpts, isInputOptions } from './input-opts'
@@ -40,9 +40,12 @@ class Executer {
     if (isGenerator(genOrPromise)) {
       return await this.iterate(instance, ctx, genOrPromise)
     }
-    else {
+    else if (isPromise(genOrPromise)) {
       return await genOrPromise
     }
+    else {
+      return genOrPromise
+  }
   }
 
   async fireOnCommand(instance: IBot, ctx: ContextMessageUpdate, initializer: CommandInfo) {
@@ -151,9 +154,17 @@ class Executer {
       }
     }
 
-    const genOrPromise = handler.call(instance)
+    const genOrPromise: any = handler.call(instance)
     if (emitsEvent) {
       this.emit(instance, 'command.call', 'i', name)
+    }
+
+    if (isPromise(genOrPromise)) {
+      return await genOrPromise
+    }
+
+    if (!isGenerator(genOrPromise)) {
+      return genOrPromise
     }
 
     this.executingCommand.set(instance, { genOrPromise, initializer })
@@ -199,15 +210,16 @@ class Executer {
 
     //@ts-ignore
     const genOrPromise = initializer.handler.call(instance, ctx, command?.initializer?.name)
-    let value: any
+
     if (isGenerator(genOrPromise)) {
-      value = await this.iterate(instance, ctx, genOrPromise)
+      return await this.iterate(instance, ctx, genOrPromise)
+    }
+    else if (isPromise(genOrPromise)) {
+      return await genOrPromise
     }
     else {
-      value = await genOrPromise
+      return genOrPromise
     }
-
-    return value
   }
 
   async fireOnHears(instance: IBot, ctx: ContextMessageUpdate, initializer: HearsInfo) {
@@ -277,8 +289,11 @@ class Executer {
     if (isGenerator(genOrPromise)) {
       value = await this.iterate(instance, ctx, genOrPromise)
     }
-    else {
+    else if (isPromise(genOrPromise)) {
       value = await genOrPromise
+    }
+    else {
+      value = genOrPromise
     }
 
     if (!keepMatchResults) {
