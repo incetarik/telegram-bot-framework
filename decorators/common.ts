@@ -33,3 +33,17 @@ export function isGenerator(thing: any): thing is AsyncGenerator {
   return true
 }
 
+/**
+ * Indicates whether the given object is promise-like or not.
+ *
+ * @export
+ * @template T The type of the promise.
+ * @param {*} thing The object to check.
+ * @returns {thing is Promise<T>} `true` if the given object is a promise.
+ */
+export function isPromise<T = any>(thing: any): thing is Promise<T> {
+  if (typeof thing !== 'object') { return false }
+  if (typeof thing.then !== 'function') { return false }
+  if (typeof thing.catch !== 'function') { return false }
+  return true
+}
