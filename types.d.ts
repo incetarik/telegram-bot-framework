@@ -368,7 +368,7 @@ declare interface IHearsDecoratorOpts {
    * Indicates whether to ignore any message that matchs with given condition
    * but not when it starts with a slash (`/`) indicating that is a command.
    *
-   * `true` by default.
+   * `false` by default.
    *
    * @type {boolean}
    * @memberof IHearsDecoratorOpts

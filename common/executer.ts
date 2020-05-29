@@ -30,7 +30,7 @@ type IIteratorOpts = {
 class Executer {
   private askedInputInCommand: WeakMap<any, boolean> = new WeakMap()
   private executingCommand: WeakMap<any, { genOrPromise: AsyncGenerator | Promise<any>, initializer: CommandInfo }> = new WeakMap()
-  private executingHear: WeakMap<any, boolean> = new WeakMap()
+  private executingHear: WeakMap<any, HearsInfo & { generator?: AsyncGenerator }> = new WeakMap()
   private onceExecutions: WeakMap<any, any> = new WeakMap()
   private botSettings!: IBotSettings
 
@@ -230,7 +230,7 @@ class Executer {
     //@ts-ignore
     const { opts, handler } = initializer
     //@ts-ignore
-    const { executeDuringCommand, othersMayHear } = opts
+    const { executeDuringCommand, othersMayHear = false } = opts
 
     if (!executeDuringCommand && this.askedInputInCommand.get(instance)) { return }
 
@@ -260,8 +260,6 @@ class Executer {
       }
     }
 
-    this.executingHear.set(instance, true)
-
     //@ts-ignore
     const { keepMatchResults, emitsEvent, match } = opts
 
@@ -287,12 +285,16 @@ class Executer {
     let value: any
 
     if (isGenerator(genOrPromise)) {
+      const opts = { ...initializer, generator: genOrPromise }
+      this.executingHear.set(instance, opts)
       value = await this.iterate(instance, ctx, genOrPromise)
     }
     else if (isPromise(genOrPromise)) {
+      this.executingHear.set(instance, initializer)
       value = await genOrPromise
     }
     else {
+      this.executingHear.set(instance, initializer)
       value = genOrPromise
     }
 
@@ -397,7 +399,7 @@ class Executer {
           this.askedInputInCommand.set(instance, true)
         }
 
-        nextValue = await this.askForInput(value, ctx)
+          nextValue = await this.askForInput(value, ctx, instance)
       }
       else if ('message' in value) {
         nextValue = await this.replyMessage(value, ctx)
@@ -420,6 +422,9 @@ class Executer {
           })
         })
       }
+        else if (nextValue === SYM_PROMISE_REPLACE) {
+          return SYM_PROMISE_REPLACE
+        }
 
       if (typeof nextValue === 'string' && nextValue.startsWith('/')) {
         return
@@ -481,6 +486,20 @@ class Executer {
         }
 
         const { text } = userMessage
+        if (text.startsWith('/') && instance && this.executingHear.has(instance)) {
+          const info = this.executingHear.get(instance)!
+          const { generator, opts } = info
+          const { ignoreCommands } = opts
+          if (!ignoreCommands) {
+            if (generator) {
+              await generator.return(SYM_PROMISE_REPLACE)
+            }
+
+            this.executingCommand.delete(instance)
+            return SYM_PROMISE_REPLACE
+          }
+        }
+
         if (text.match(match)) {
           return text
         }
@@ -762,6 +781,34 @@ class Executer {
       const { opts } = initializer
       const { onceForBot, onceForBotIn, blockMessage, botBlockMessage = blockMessage } = opts
 
+      const { message } = ctx
+      if (message) {
+        const { text } = message
+        if (text && text.startsWith('/')) {
+          if (type === 'hears') {
+            const { ignoreCommands = false } = opts as IHearsDecoratorOpts
+            if (!ignoreCommands) {
+              if (this.executingHear.has(instance)) {
+                const info = this.executingHear.get(instance)!
+                if (typeof info.generator === 'object') {
+                  await info.generator.return(SYM_PROMISE_REPLACE)
+                }
+
+                this.executingHear.delete(instance)
+              }
+
+              return false
+            }
+            else if (this.executingHear.has(instance)) {
+              const info = this.executingHear.get(instance)!
+              if (info.name === initializer.name) {
+                return false
+              }
+            }
+          }
+        }
+      }
+
       if (onceForBot) {
         let settings = this.onceExecutions.get(instance)
         if (!settings) {
@@ -891,19 +938,6 @@ class Executer {
                 await this.sendBlockedMessageIfNeeded(instance, userBlockMessage, ctx, initializer, from)
               }
 
-              return false
-            }
-          }
-        }
-      }
-
-      const { message } = ctx
-      if (message) {
-        const { text } = message
-        if (text && text.startsWith('/')) {
-          if (type === 'hears') {
-            const { ignoreCommands = true } = opts as IHearsDecoratorOpts
-            if (ignoreCommands) {
               return false
             }
           }
