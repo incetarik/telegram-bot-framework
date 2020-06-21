@@ -1,22 +1,27 @@
 import { existsSync, readFile } from 'fs'
 import { compile as compileTemplate } from 'handlebars'
 import { join } from 'path'
-import { ContextMessageUpdate } from 'telegraf'
+import { ContextMessageUpdate, Extra, Markup } from 'telegraf'
 import {
   ExtraEditMessage, ExtraPhoto, IncomingMessage, InputFile, Message,
   MessageMedia, User
 } from 'telegraf/typings/telegram-types'
+import { CBHandler, IMenu, inlineMenu } from 'telegram-inline-menu'
 
 import { IBotSettings } from '../create-bot'
 import { IBot } from '../decorators'
 import {
-  ActionInfo, CommandInfo, HearsInfo, InitInfo, isGenerator, SYM_CONTEXT,
-  SYM_EVENTS, SYM_HEAR_EXEC_COUNTS, SYM_ONCE, SYM_PROMISE_REPLACE, SYM_STATE, isPromise
+  ActionInfo, CommandInfo, HearsInfo, InitInfo, isGenerator, isPromise,
+  MenuInfo, SYM_CONTEXT, SYM_EVENTS, SYM_HEAR_EXEC_COUNTS, SYM_ONCE,
+  SYM_PROMISE_REPLACE, SYM_STATE
 } from '../decorators/common'
 import { _ } from '../translations'
+import { isInlineMenu } from './inline-menu'
 import { IInputOpts, isInputOptions } from './input-opts'
 import { INotificationInfo, isNotificationInfo } from './notify-users'
-import { IReplyMessage, isImageReplyMessage, isSetActionMessage } from './reply-message'
+import {
+  IReplyMessage, isImageReplyMessage, isSetActionMessage
+} from './reply-message'
 import { WaitingStates } from './waiting-states'
 
 type IIteratorOpts = {
@@ -365,6 +370,7 @@ class Executer {
     //@ts-ignore
     instance[ SYM_CONTEXT ] = ctx
 
+    try {
     if (typeof gen === 'function') {
       const { parameters = [] } = options
       gen = gen.apply(instance, parameters)
@@ -422,6 +428,100 @@ class Executer {
           })
         })
       }
+        else if (isInlineMenu(value)) {
+          let {
+            inlineMenu: im,
+            closeOnTimeout,
+            timeoutMessage = '',
+            onSelected,
+          } = value
+
+          let resolver: Function | undefined
+
+          if (CBHandler.attach(instance.ref)) {
+            CBHandler.setMenuKeeper(instance)
+            CBHandler.setOnMenuClose(function menuCloseResolver() {
+              if (typeof resolver === 'function') {
+                resolver()
+                resolver = undefined
+              }
+            })
+
+            const { botSettings } = this
+            const { catchFunction = 'onError' } = botSettings
+            CBHandler.setOnError(function callbackQueryError(error: Error) {
+              //@ts-ignore
+              const errorHandler: Function = instance[ catchFunction ]
+
+              if (typeof errorHandler === 'function') {
+                errorHandler.call(instance, error)
+              }
+            })
+          }
+
+          let menuMessage: Message | undefined
+          const { lastMenuMessages } = this
+          try {
+            nextValue = await new Promise(async function inlineMenuHandler(resolve, reject) {
+              resolver = resolve
+              let willResolveManually = true
+
+              if (typeof im === 'function') {
+                im = await im(resolve, reject)
+
+                if (typeof onSelected !== 'function') {
+                  im = await im
+                }
+
+                willResolveManually = false
+              }
+
+              im = await inlineMenu(im as IMenu)
+
+              try {
+                const sentMessage = await CBHandler.showMenu(ctx, im)
+                if (typeof sentMessage === 'object') {
+                  menuMessage = sentMessage
+                  lastMenuMessages.set(instance, menuMessage)
+                }
+
+                if (willResolveManually) {
+                  resolve()
+                  resolver = undefined
+                }
+              }
+              catch (error) {
+                reject(error)
+              }
+            })
+          }
+          catch (error) {
+            if (error instanceof Error) {
+              if (error.message === 'Timeout') {
+                if (closeOnTimeout) {
+                  timeoutMessage = timeoutMessage.trim()
+                  CBHandler.activeMenu = undefined
+                  if (!menuMessage) {
+                    nextValue = undefined
+                    continue
+                  }
+
+                  const { chat, message_id } = menuMessage
+
+                  if (timeoutMessage) {
+                    await ctx.telegram.editMessageText(chat.id, message_id, undefined, timeoutMessage, Extra.markup(Markup.inlineKeyboard([])))
+                  }
+                  else {
+                    await ctx.deleteMessage(message_id)
+                  }
+
+                  lastMenuMessages.delete(instance)
+                  nextValue = undefined
+                }
+              }
+            }
+          }
+        }
         else if (nextValue === SYM_PROMISE_REPLACE) {
           return SYM_PROMISE_REPLACE
         }
@@ -431,8 +531,18 @@ class Executer {
       }
     }
   }
+    catch (error) {
+      const { catchFunction = 'onError', printStackTrace = true } = this.botSettings
+      if (catchFunction in instance) {
+        await (instance as any)[ catchFunction ].call(instance, error)
+      }
+      else if (printStackTrace) {
+        console.error(error)
+      }
+    }
+  }
 
-  async askForInput(inputObj: IInputOpts, ctx: ContextMessageUpdate) {
+  async askForInput(inputObj: IInputOpts, ctx: ContextMessageUpdate, instance?: any) {
     let {
       match,
       matchError = 'Invalid Input',
@@ -447,7 +557,9 @@ class Executer {
     if (!keepAsking) {
       //@ts-ignore
       const lastMessage = await this.replyMessage(inputObj, ctx)
+      if (typeof lastMessage === 'object') {
       await didMessageSend?.(lastMessage)
+    }
     }
 
     do {
@@ -456,7 +568,9 @@ class Executer {
       if (keepAsking) {
         //@ts-ignore
         const lastMessage = await this.replyMessage(inputObj, ctx)
+        if (typeof lastMessage === 'object') {
         await didMessageSend?.(lastMessage)
+      }
       }
 
       let userMessage: IncomingMessage
@@ -517,7 +631,7 @@ class Executer {
     return false
   }
 
-  async replyMessage(messageObj: IReplyMessage, ctx: ContextMessageUpdate) {
+  async replyMessage(messageObj: IReplyMessage, ctx: ContextMessageUpdate): Promise<Message | undefined | boolean> {
     const {
       //@ts-ignore
       input,
@@ -953,7 +1067,7 @@ class Executer {
 const executer = new Executer()
 
 export function handleActions(instance: any, initializer: InitInfo) {
-  return async function (ctx: ContextMessageUpdate) {
+  return async function _handleActions(ctx: ContextMessageUpdate) {
     instance[ SYM_CONTEXT ] = ctx
     try {
       await executer.fireOnAction(instance, ctx, initializer as ActionInfo)
@@ -968,8 +1082,8 @@ export function handleActions(instance: any, initializer: InitInfo) {
   }
 }
 
-export function handleCommand(instance: any, initializer: InitInfo) {
-  return async function (ctx: ContextMessageUpdate) {
+export function handleCommands(instance: any, initializer: InitInfo) {
+  return async function _handleCommand(ctx: ContextMessageUpdate) {
     instance[ SYM_CONTEXT ] = ctx
     try {
       await executer.fireOnCommand(instance, ctx, initializer as CommandInfo)
@@ -985,7 +1099,7 @@ export function handleCommand(instance: any, initializer: InitInfo) {
 }
 
 export function handleHears(instance: any, initializer: InitInfo) {
-  return async function (ctx: ContextMessageUpdate) {
+  return async function _handleHears(ctx: ContextMessageUpdate) {
     instance[ SYM_CONTEXT ] = ctx
     try {
       await executer.fireOnHears(instance, ctx, initializer as HearsInfo)
@@ -1001,7 +1115,23 @@ export function handleHears(instance: any, initializer: InitInfo) {
 }
 
 export function handleGeneric(instance: any, initializer: InitInfo) {
-  return async function (ctx: ContextMessageUpdate) {
+  return async function _handleGeneric(ctx: ContextMessageUpdate) {
+    instance[ SYM_CONTEXT ] = ctx
+    try {
+      await executer.fireGeneric(instance, ctx, initializer)
+    }
+    catch (error) {
+      if (typeof error === 'string') { error = new Error(error) }
+      if (typeof instance.onError === 'function') { instance.onError(error) }
+      else {
+        throw error
+      }
+    }
+  }
+}
+
+export function handleMenuAction(instance: any, initializer: MenuInfo) {
+  return async function _handleMenuAction(ctx: ContextMessageUpdate) {
     instance[ SYM_CONTEXT ] = ctx
     try {
       await executer.fireGeneric(instance, ctx, initializer)

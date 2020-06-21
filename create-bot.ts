@@ -67,6 +67,18 @@ export interface IBotSettings extends TelegrafOptions {
    * @memberof IBot
    */
   use?: Middleware<ContextMessageUpdate> | Middleware<ContextMessageUpdate>[]
+
+  /**
+   * Indicates whether to print the stack trace or not when an error occurs.
+   *
+   * This will be ignored if the catch function exists in the bot class.
+   *
+   * `true` by default
+   *
+   * @type {boolean}
+   * @memberof IBotSettings
+   */
+  printStackTrace?: boolean
 }
 
 export function createBot(opts: IBotSettings) {

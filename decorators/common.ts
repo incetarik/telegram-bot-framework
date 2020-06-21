@@ -7,8 +7,9 @@ export type StartInfo = DecInfo & { type: 'start' }
 export type ActionInfo = DecInfo & { type: 'action', opts: IActionDecoratorOpts }
 export type CommandInfo = DecInfo & { type: 'command', opts: ICommandDecoratorOpts }
 export type HearsInfo = DecInfo & { type: 'hears', opts: IHearsDecoratorOpts, match: RegExp }
+export type MenuInfo = DecInfo & { type: 'callback_menu', menuId: string, buttonId: string }
 
-export type InitInfo = CommandInfo | ActionInfo | HelpInfo | StartInfo | HearsInfo
+export type InitInfo = CommandInfo | ActionInfo | HelpInfo | StartInfo | HearsInfo | MenuInfo
 
 export const SYM_EVENTS = Symbol('@@bot-events')
 export const SYM_CONTEXT = Symbol('@@bot-context')

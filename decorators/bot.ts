@@ -4,7 +4,7 @@ import { Message } from 'telegraf/typings/telegram-types'
 
 import { WaitingStates } from '../common'
 import {
-  askForInput, handleActions, handleCommand, handleHears, replyMessage, handleGeneric, setExecuterBotSettings
+  askForInput, handleActions, handleCommands, handleHears, replyMessage, handleGeneric, setExecuterBotSettings, closeMenu
 } from '../common/executer'
 import { IInputOpts } from "../common/input-opts"
 import { IReplyMessage } from "../common/reply-message"
@@ -13,6 +13,304 @@ import {
   INIT_MAP, SYM_CONTEXT, SYM_EVENTS,
   SYM_PROMISE_REPLACE, SYM_STATE, SYM_HEAR_EXEC_COUNTS
 } from './common'
+
+const DEFAULT_BOT_SETTINGS: IBotSettings = {
+  autoUpdateStatus: true,
+  startFunction: 'start',
+  catchFunction: 'onError',
+  helpFunction: 'help',
+}
+
+/**
+ * Marks a class as the bot implementation logic and prepares a platform for
+ * other decorators such as `state()`, `action()` and `@command()`.
+ *
+ * This decorators adds bunch of new functions to the class, hence for type
+ * safety, you can write an empty interface extending `IBot` with the same
+ * name of your class. Hence, you will get your type definitions.
+ *
+ * @example
+ * ```js
+ * export interface SearchBot extends IBot {}
+ *
+ * @bot()
+ * export class SearchBot {
+ *   // Implementation here
+ * }
+ * ```
+ *
+ * @export
+ * @param {IBotSettings} [opts] Options for the bot.
+ * @returns
+ */
+export function bot(opts?: IBotSettings) {
+  if (typeof opts !== 'object') {
+    opts = { ...DEFAULT_BOT_SETTINGS }
+  }
+
+  const {
+    helpFunction = 'help',
+    startFunction = 'start',
+    catchFunction = 'onError',
+    use,
+  } = opts;
+
+  return function botClass<T extends { new(...args: any[]): {} }>(constr: T) {
+    let isStartSet = false
+    let initialized = false
+    let helpSet: string | undefined
+    let eventSubject: Subject<BotEvent>
+    let reference: Telegraf<ContextMessageUpdate>
+
+    const initialHearsExecutions: Dictionary<number> = {}
+    const state: Dictionary<Dictionary<{ value: any, props: IBotStateSettings }>> = {}
+
+    Object.defineProperties(constr.prototype, {
+      ref: {
+        configurable: false,
+        get() {
+          return reference || (reference = createBot(opts || {}))
+        }
+      },
+      init: {
+        configurable: false,
+        value() {
+          if (initialized) { return false }
+
+          setExecuterBotSettings(opts!)
+
+          if (catchFunction in this) {
+            this.ref.catch(this[ catchFunction ].bind(this))
+          }
+
+          if (helpFunction in this) {
+            if (helpSet) {
+              throw new Error(`A help function is already set before: ${helpSet}`)
+            }
+
+            this.ref.help(handleGeneric(this, { handler: this.help, name: 'help', type: 'help' }))
+            helpSet = 'help'
+          }
+
+          if (startFunction in this) {
+            this.ref.start(handleGeneric(this, { handler: this.start, name: 'start', type: 'start' }))
+            isStartSet = true
+          }
+
+          const initArray = INIT_MAP.get(constr.prototype)
+          if (initArray) {
+            const commandsAdded: string[] = []
+
+            initArray.forEach(it => {
+              switch (it.type) {
+                case 'action': {
+                  this.ref.action(it.name, handleActions(this, it))
+                  break
+                }
+
+                case 'command': {
+                  if (commandsAdded.indexOf(it.name) >= 0) {
+                    throw new Error(`The command /${it.name} is already added before`)
+                  }
+
+                  this.ref.command(it.name, handleCommands(this, it))
+                  commandsAdded.push(it.name)
+                  break
+                }
+
+                case 'hears': {
+                  this.ref.hears(it.match, handleHears(this, it))
+                  const { executeCount = Infinity } = it.opts
+                  if (it.name in initialHearsExecutions) {
+                    throw new Error(`The hears ${it.name} is already added before`)
+                  }
+
+                  initialHearsExecutions[ it.name ] = executeCount
+                  break
+                }
+
+                case 'help': {
+                  if (helpSet) {
+                    throw new Error(`A help function is already set before: ${helpSet}`)
+                  }
+
+                  this.ref.help(handleGeneric(this, it))
+                  helpSet = it.name
+                  break
+                }
+
+                case 'start': {
+                  if (isStartSet) {
+                    throw new Error('The start function is already set before')
+                  }
+
+                  this.ref.start(handleGeneric(this, it))
+                  isStartSet = true
+                  break
+                }
+
+                default: {
+                  throw new Error(`Invalid information: ${JSON.stringify(it)}`)
+                }
+              }
+            })
+
+            INIT_MAP.delete(constr.prototype)
+          }
+
+          if (typeof use !== 'undefined') {
+            //@ts-ignore
+            let useArray: Middleware<ContextMessageUpdate>[] = use
+            if (!Array.isArray(use)) {
+              useArray = [ use ]
+            }
+
+            this.ref.use(useArray.shift()!, ...useArray)
+          }
+
+          return initialized = true
+        }
+      },
+      resetStates: {
+        configurable: false,
+        value() {
+          WaitingStates[ 'cancelWaiting' ](this.context.from?.id)
+          const userState = this[ SYM_STATE ] as Dictionary<{ value: any, props: IBotStateSettings }>
+          for (const key in userState) {
+            const prop = userState[ key ]
+            if ('_reset' in prop.props) {
+              //@ts-ignore
+              prop.props[ '_reset' ]?.()
+            }
+
+            //@ts-ignore
+            prop.value = prop.props[ '_defaultValue' ] ?? prop.props[ '_propDefault' ] ?? prop.props.defaultsTo
+          }
+        }
+      },
+      context: {
+        configurable: false,
+        enumerable: false,
+        get() {
+          return this[ SYM_CONTEXT ]
+        }
+      },
+      [ SYM_EVENTS ]: {
+        configurable: false,
+        enumerable: false,
+        get() {
+          return eventSubject || (eventSubject = new Subject())
+        }
+      },
+      [ SYM_CONTEXT ]: {
+        enumerable: false,
+        writable: true,
+        value: undefined
+      },
+      [ SYM_STATE ]: {
+        configurable: false,
+        enumerable: false,
+        get() {
+          const context = this[ SYM_CONTEXT ] as ContextMessageUpdate
+          if (!context) { return undefined }
+          const { from } = context
+          if (!from) { return undefined }
+          const { id } = from
+          //@ts-ignore
+          const userState = (state[ id ] || (state[ id ] = {}))
+          return userState
+        }
+      },
+      [ SYM_HEAR_EXEC_COUNTS ]: {
+        configurable: false,
+        enumerable: false,
+        get() {
+          const context = this[ SYM_CONTEXT ] as ContextMessageUpdate
+          if (!context) { return undefined }
+          const { from } = context
+          if (!from) { return undefined }
+          const { id } = from
+          const userState = (state[ id ] || (state[ id ] = { [ SYM_HEAR_EXEC_COUNTS ]: { ...initialHearsExecutions } }))
+          if (!(SYM_HEAR_EXEC_COUNTS in userState)) {
+            //@ts-ignore
+            userState[ SYM_HEAR_EXEC_COUNTS ] = { ...initialHearsExecutions }
+          }
+
+          //@ts-ignore
+          return userState[ SYM_HEAR_EXEC_COUNTS ]
+        }
+      },
+    })
+
+    if (!('run' in constr.prototype)) {
+      Object.defineProperty(constr.prototype, 'run', {
+        configurable: false,
+        value() {
+          this.init()
+          this.ref.launch()
+          this.ref.startPolling()
+        }
+      })
+    }
+
+    if (!('start' in constr.prototype)) {
+      Object.defineProperty(constr.prototype, 'start', {
+        configurable: false,
+        value() {
+          this.resetStates()
+        }
+      })
+    }
+
+    Object.defineProperties(constr.prototype, {
+      input$: {
+        configurable: false,
+        value(inputObj: IInputOpts | string) {
+          if (typeof inputObj === 'string') {
+            inputObj = {
+              input: inputObj,
+            }
+          }
+
+          return askForInput(inputObj, this.context)
+        }
+      },
+      message$: {
+        configurable: false,
+        value(messageObj: IReplyMessage | string) {
+          if (typeof messageObj === 'string') {
+            messageObj = {
+              message: messageObj
+            }
+          }
+
+          return replyMessage(messageObj, this.context)
+        }
+      },
+      isCancelled: {
+        configurable: false,
+        value(thing: any): thing is typeof SYM_PROMISE_REPLACE {
+          return thing === SYM_PROMISE_REPLACE
+        }
+      },
+      cancelInput: {
+        configurable: false,
+        value() {
+          //@ts-ignore
+          return WaitingStates.resolveFor(this.context.from!.id, SYM_PROMISE_REPLACE)
+        }
+      },
+      listenEvents$: {
+        configurable: false,
+        value() {
+          return (this[ SYM_EVENTS ] as Subject<BotEvent>).asObservable()
+        }
+      }
+    })
+
+    return constr
+  }
+}
 
 export interface IBot {
   /**
@@ -251,302 +549,4 @@ export interface IBot {
    * @memberof IBot
    */
   readonly $9?: string
-}
-
-const DEFAULT_BOT_SETTINGS: IBotSettings = {
-  autoUpdateStatus: true,
-  startFunction: 'start',
-  catchFunction: 'onError',
-  helpFunction: 'help',
-}
-
-/**
- * Marks a class as the bot implementation logic and prepares a platform for
- * other decorators such as `state()`, `action()` and `@command()`.
- *
- * This decorators adds bunch of new functions to the class, hence for type
- * safety, you can write an empty interface extending `IBot` with the same
- * name of your class. Hence, you will get your type definitions.
- *
- * @example
- * ```js
- * export interface SearchBot extends IBot {}
- *
- * @bot()
- * export class SearchBot {
- *   // Implementation here
- * }
- * ```
- *
- * @export
- * @param {IBotSettings} [opts] Options for the bot.
- * @returns
- */
-export function bot(opts?: IBotSettings) {
-  if (typeof opts !== 'object') {
-    opts = { ...DEFAULT_BOT_SETTINGS }
-  }
-
-  const {
-    helpFunction = 'help',
-    startFunction = 'start',
-    catchFunction = 'onError',
-    use,
-  } = opts;
-
-  return function botClass<T extends { new(...args: any[]): {} }>(constr: T) {
-    let isStartSet = false
-    let initialized = false
-    let helpSet: string | undefined
-    let eventSubject: Subject<BotEvent>
-    let reference: Telegraf<ContextMessageUpdate>
-
-    const initialHearsExecutions: Dictionary<number> = {}
-    const state: Dictionary<Dictionary<{ value: any, props: IBotStateSettings }>> = {}
-
-    Object.defineProperties(constr.prototype, {
-      ref: {
-        configurable: false,
-        get() {
-          return reference || (reference = createBot(opts || {}))
-        }
-      },
-      init: {
-        configurable: false,
-        value() {
-          if (initialized) { return false }
-
-          setExecuterBotSettings(opts!)
-
-          if (catchFunction in this) {
-            this.ref.catch(this[ catchFunction ].bind(this))
-          }
-
-          if (helpFunction in this) {
-            if (helpSet) {
-              throw new Error(`A help function is already set before: ${helpSet}`)
-            }
-
-            this.ref.help(handleGeneric(this, { handler: this.help, name: 'help', type: 'help' }))
-            helpSet = 'help'
-          }
-
-          if (startFunction in this) {
-            this.ref.start(handleGeneric(this, { handler: this.start, name: 'start', type: 'start' }))
-            isStartSet = true
-          }
-
-          const initArray = INIT_MAP.get(constr.prototype)
-          if (initArray) {
-            const commandsAdded: string[] = []
-
-            initArray.forEach(it => {
-              switch (it.type) {
-                case 'action': {
-                  this.ref.action(it.name, handleActions(this, it))
-                  break
-                }
-
-                case 'command': {
-                  if (commandsAdded.indexOf(it.name) >= 0) {
-                    throw new Error(`The command /${it.name} is already added before`)
-                  }
-
-                  this.ref.command(it.name, handleCommand(this, it))
-                  commandsAdded.push(it.name)
-                  break
-                }
-
-                case 'hears': {
-                  this.ref.hears(it.match, handleHears(this, it))
-                  const { executeCount = Infinity } = it.opts
-                  if (it.name in initialHearsExecutions) {
-                    throw new Error(`The hears ${it.name} is already added before`)
-                  }
-
-                  initialHearsExecutions[ it.name ] = executeCount
-                  break
-                }
-
-                case 'help': {
-                  if (helpSet) {
-                    throw new Error(`A help function is already set before: ${helpSet}`)
-                  }
-
-                  this.ref.help(handleGeneric(this, it))
-                  helpSet = it.name
-                  break
-                }
-
-                case 'start': {
-                  if (isStartSet) {
-                    throw new Error('The start function is already set before')
-                  }
-
-                  this.ref.start(handleGeneric(this, it))
-                  isStartSet = true
-                  break
-                }
-
-                default: {
-                  throw new Error(`Invalid information: ${JSON.stringify(it)}`)
-                }
-              }
-            })
-
-            INIT_MAP.delete(constr.prototype)
-          }
-
-          if (typeof use !== 'undefined') {
-            //@ts-ignore
-            let useArray: Middleware<ContextMessageUpdate>[] = use
-            if (!Array.isArray(use)) {
-              useArray = [ use ]
-            }
-
-            this.ref.use(useArray.shift()!, ...useArray)
-          }
-
-          return initialized = true
-        }
-      },
-      resetStates: {
-        configurable: false,
-        value() {
-          WaitingStates[ 'cancelWaiting' ](this.context.from?.id)
-          const userState = this[ SYM_STATE ] as Dictionary<{ value: any, props: IBotStateSettings }>
-          for (const key in userState) {
-            const prop = userState[ key ]
-            if ('_reset' in prop.props) {
-              //@ts-ignore
-              prop.props[ '_reset' ]?.()
-            }
-
-            //@ts-ignore
-            prop.value = prop.props[ '_defaultValue' ] ?? prop.props[ '_propDefault' ] ?? prop.props.defaultsTo
-          }
-        }
-      },
-      context: {
-        configurable: false,
-        enumerable: false,
-        get() {
-          return this[ SYM_CONTEXT ]
-        }
-      },
-      [ SYM_EVENTS ]: {
-        configurable: false,
-        enumerable: false,
-        get() {
-          return eventSubject || (eventSubject = new Subject())
-        }
-      },
-      [ SYM_CONTEXT ]: {
-        enumerable: false,
-        writable: true,
-        value: undefined
-      },
-      [ SYM_STATE ]: {
-        configurable: false,
-        enumerable: false,
-        get() {
-          const context = this[ SYM_CONTEXT ] as ContextMessageUpdate
-          if (!context) { return undefined }
-          const { from } = context
-          if (!from) { return undefined }
-          const { id } = from
-          //@ts-ignore
-          const userState = (state[ id ] || (state[ id ] = {}))
-          return userState
-        }
-      },
-      [ SYM_HEAR_EXEC_COUNTS ]: {
-        configurable: false,
-        enumerable: false,
-        get() {
-          const context = this[ SYM_CONTEXT ] as ContextMessageUpdate
-          if (!context) { return undefined }
-          const { from } = context
-          if (!from) { return undefined }
-          const { id } = from
-          const userState = (state[ id ] || (state[ id ] = { [ SYM_HEAR_EXEC_COUNTS ]: { ...initialHearsExecutions } }))
-          if (!(SYM_HEAR_EXEC_COUNTS in userState)) {
-            //@ts-ignore
-            userState[ SYM_HEAR_EXEC_COUNTS ] = { ...initialHearsExecutions }
-          }
-
-          //@ts-ignore
-          return userState[ SYM_HEAR_EXEC_COUNTS ]
-        }
-      },
-    })
-
-    if (!('run' in constr.prototype)) {
-      Object.defineProperty(constr.prototype, 'run', {
-        configurable: false,
-        value() {
-          this.init()
-          this.ref.launch()
-          this.ref.startPolling()
-        }
-      })
-    }
-
-    if (!('start' in constr.prototype)) {
-      Object.defineProperty(constr.prototype, 'start', {
-        configurable: false,
-        value() {
-          this.resetStates()
-        }
-      })
-    }
-
-    Object.defineProperties(constr.prototype, {
-      input$: {
-        configurable: false,
-        value(inputObj: IInputOpts | string) {
-          if (typeof inputObj === 'string') {
-            inputObj = {
-              input: inputObj,
-            }
-          }
-
-          return askForInput(inputObj, this.context)
-        }
-      },
-      message$: {
-        configurable: false,
-        value(messageObj: IReplyMessage | string) {
-          if (typeof messageObj === 'string') {
-            messageObj = {
-              message: messageObj
-            }
-          }
-
-          return replyMessage(messageObj, this.context)
-        }
-      },
-      isCancelled: {
-        configurable: false,
-        value(thing: any): thing is typeof SYM_PROMISE_REPLACE {
-          return thing === SYM_PROMISE_REPLACE
-        }
-      },
-      cancelInput: {
-        configurable: false,
-        value() {
-          //@ts-ignore
-          return WaitingStates.resolveFor(this.context.from!.id, SYM_PROMISE_REPLACE)
-        }
-      },
-      listenEvents$: {
-        configurable: false,
-        value() {
-          return (this[ SYM_EVENTS ] as Subject<BotEvent>).asObservable()
-        }
-      }
-    })
-
-    return constr
-  }
 }
