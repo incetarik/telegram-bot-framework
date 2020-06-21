@@ -5,7 +5,7 @@ import { CBHandler } from 'telegram-inline-menu'
 
 import { WaitingStates } from '../common'
 import {
-  askForInput, closeMenu, handleActions, handleCommands, handleGeneric,
+  askForInput, handleActions, handleCommands, handleGeneric,
   handleHears, replyMessage, setExecuterBotSettings
 } from '../common/executer'
 import { IInputOpts } from '../common/input-opts'

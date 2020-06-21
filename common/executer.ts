@@ -469,7 +469,6 @@ class Executer {
           }
 
           let menuMessage: Message | undefined
-          const { lastMenuMessages } = this
           try {
             nextValue = await new Promise(async function inlineMenuHandler(resolve, reject) {
               resolver = resolve
@@ -491,7 +490,6 @@ class Executer {
                 const sentMessage = await CBHandler.showMenu(ctx, im)
                 if (typeof sentMessage === 'object') {
                   menuMessage = sentMessage
-                  lastMenuMessages.set(instance, menuMessage)
                 }
 
                 if (willResolveManually) {
@@ -524,7 +522,6 @@ class Executer {
                     await ctx.deleteMessage(message_id)
                   }
 
-                  lastMenuMessages.delete(instance)
                   nextValue = undefined
                 }
               }
