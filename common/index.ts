@@ -1,4 +1,4 @@
-export { handleActions, handleCommand, handleHears } from './executer'
+export { inlineMenu, isInlineMenu } from './inline-menu'
 export { IInputOpts, isInputOptions, makeInputObject } from './input-opts'
 export { INotificationInfo, isNotificationInfo, makeNotification } from './notify-users'
 export {
