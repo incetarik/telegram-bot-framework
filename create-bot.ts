@@ -50,6 +50,30 @@ export interface IBotSettings extends TelegrafOptions {
   startFunction?: string
 
   /**
+   * The name of the function for callback_query.
+   * `onCallbackQuery` by default.
+   *
+   * When user reacts to a menu or unassigned reaction, it will be executed
+   * automatically with the content of the callback_query.
+   *
+   * @type {string}
+   * @memberof IBotSettings
+   */
+  callbackQueryFunction?: string
+
+  /**
+   * Indicates whether the callback query handler function of the bot should
+   * not be called if the query is handled internally such as inline menu
+   * queries.
+   *
+   * `true` by default.
+   *
+   * @type {boolean}
+   * @memberof IBotSettings
+   */
+  skipHandledCallbackQueries?: boolean
+
+  /**
    * Indicates that whether the status/action of the bot should be updated
    * automatically when sending a photo, video or audio.
    *

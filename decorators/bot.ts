@@ -1,17 +1,19 @@
 import { Observable, Subject } from 'rxjs'
 import Telegraf, { ContextMessageUpdate, Middleware } from 'telegraf'
 import { Message } from 'telegraf/typings/telegram-types'
+import { CBHandler } from 'telegram-inline-menu'
 
 import { WaitingStates } from '../common'
 import {
-  askForInput, handleActions, handleCommands, handleHears, replyMessage, handleGeneric, setExecuterBotSettings, closeMenu
+  askForInput, closeMenu, handleActions, handleCommands, handleGeneric,
+  handleHears, replyMessage, setExecuterBotSettings
 } from '../common/executer'
-import { IInputOpts } from "../common/input-opts"
-import { IReplyMessage } from "../common/reply-message"
+import { IInputOpts } from '../common/input-opts'
+import { IReplyMessage } from '../common/reply-message'
 import { createBot, IBotSettings } from '../create-bot'
 import {
-  INIT_MAP, SYM_CONTEXT, SYM_EVENTS,
-  SYM_PROMISE_REPLACE, SYM_STATE, SYM_HEAR_EXEC_COUNTS
+  INIT_MAP, SYM_CONTEXT, SYM_EVENTS, SYM_HEAR_EXEC_COUNTS, SYM_PROMISE_REPLACE,
+  SYM_STATE
 } from './common'
 
 const DEFAULT_BOT_SETTINGS: IBotSettings = {
@@ -19,6 +21,8 @@ const DEFAULT_BOT_SETTINGS: IBotSettings = {
   startFunction: 'start',
   catchFunction: 'onError',
   helpFunction: 'help',
+  callbackQueryFunction: 'onCallbackQuery',
+  skipHandledCallbackQueries: true,
 }
 
 /**
@@ -52,6 +56,8 @@ export function bot(opts?: IBotSettings) {
     helpFunction = 'help',
     startFunction = 'start',
     catchFunction = 'onError',
+    callbackQueryFunction = 'onCallbackQuery',
+    skipHandledCallbackQueries = true,
     use,
   } = opts;
 
@@ -95,6 +101,33 @@ export function bot(opts?: IBotSettings) {
           if (startFunction in this) {
             this.ref.start(handleGeneric(this, { handler: this.start, name: 'start', type: 'start' }))
             isStartSet = true
+          }
+
+          let handlerFunction: Function | undefined
+          if (callbackQueryFunction in this) {
+            handlerFunction = handleGeneric(this, {
+              name: 'callbackQuery',
+              type: 'callback_query',
+              handler: function callbackHandler(this: any, ctx: ContextMessageUpdate) {
+                return this[ callbackQueryFunction ](ctx.callbackQuery!)
+              },
+            })
+          }
+
+          if (CBHandler.attach(this.ref)) {
+            if (typeof handlerFunction === 'function') {
+              const that = this
+              if (skipHandledCallbackQueries) {
+                CBHandler.setUnhandledQueryHandler(function _callbackQueryHandler(ctx) {
+                  handlerFunction!.call(that, ctx)
+                })
+              }
+              else {
+                CBHandler.setQueryHandler(function _callbackQueryHandler(ctx) {
+                  handlerFunction!.call(that, ctx)
+                })
+              }
+            }
           }
 
           const initArray = INIT_MAP.get(constr.prototype)
@@ -146,6 +179,11 @@ export function bot(opts?: IBotSettings) {
 
                   this.ref.start(handleGeneric(this, it))
                   isStartSet = true
+                  break
+                }
+
+                case 'callback_menu': {
+                  //? This will automatically be attached to the instance by the menu
                   break
                 }
 

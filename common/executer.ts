@@ -13,7 +13,7 @@ import { IBot } from '../decorators'
 import {
   ActionInfo, CommandInfo, HearsInfo, InitInfo, isGenerator, isPromise,
   MenuInfo, SYM_CONTEXT, SYM_EVENTS, SYM_HEAR_EXEC_COUNTS, SYM_ONCE,
-  SYM_PROMISE_REPLACE, SYM_STATE
+  SYM_PROMISE_REPLACE, SYM_STATE, SYM_CBHANDLER_FUNCTION
 } from '../decorators/common'
 import { _ } from '../translations'
 import { isInlineMenu } from './inline-menu'
@@ -33,10 +33,10 @@ type IIteratorOpts = {
 }
 
 class Executer {
-  private askedInputInCommand: WeakMap<any, boolean> = new WeakMap()
-  private executingCommand: WeakMap<any, { genOrPromise: AsyncGenerator | Promise<any>, initializer: CommandInfo }> = new WeakMap()
-  private executingHear: WeakMap<any, HearsInfo & { generator?: AsyncGenerator }> = new WeakMap()
-  private onceExecutions: WeakMap<any, any> = new WeakMap()
+  private askedInputInCommand: WeakMap<IBot, boolean> = new WeakMap()
+  private executingCommand: WeakMap<IBot, { genOrPromise: AsyncGenerator | Promise<any>, initializer: CommandInfo }> = new WeakMap()
+  private executingHear: WeakMap<IBot, HearsInfo & { generator?: AsyncGenerator }> = new WeakMap()
+  private onceExecutions: WeakMap<IBot, Dictionary<number | boolean>> = new WeakMap()
   private botSettings!: IBotSettings
 
   async fireGeneric(instance: IBot, ctx: ContextMessageUpdate, initializer: InitInfo) {
@@ -438,7 +438,7 @@ class Executer {
 
           let resolver: Function | undefined
 
-          if (CBHandler.attach(instance.ref)) {
+          if (!(SYM_CBHANDLER_FUNCTION in instance)) {
             CBHandler.setMenuKeeper(instance)
             CBHandler.setOnMenuClose(function menuCloseResolver() {
               if (typeof resolver === 'function') {
@@ -448,7 +448,10 @@ class Executer {
             })
 
             const { botSettings } = this
-            const { catchFunction = 'onError' } = botSettings
+            const {
+              catchFunction = 'onError',
+            } = botSettings
+
             CBHandler.setOnError(function callbackQueryError(error: Error) {
               //@ts-ignore
               const errorHandler: Function = instance[ catchFunction ]
@@ -456,6 +459,12 @@ class Executer {
               if (typeof errorHandler === 'function') {
                 errorHandler.call(instance, error)
               }
+            })
+
+            Object.defineProperty(instance, SYM_CBHANDLER_FUNCTION, {
+              configurable: false,
+              enumerable: false,
+              value: true
             })
           }
 
@@ -956,7 +965,7 @@ class Executer {
 
         const now = (new Date()).getTime()
         if (name in settings) {
-          const execTime = settings[ name ]
+          const execTime = settings[ name ] as number
           if (now > execTime) {
             settings[ name ] = now + onceForBotIn
             return true

@@ -8,8 +8,9 @@ export type ActionInfo = DecInfo & { type: 'action', opts: IActionDecoratorOpts 
 export type CommandInfo = DecInfo & { type: 'command', opts: ICommandDecoratorOpts }
 export type HearsInfo = DecInfo & { type: 'hears', opts: IHearsDecoratorOpts, match: RegExp }
 export type MenuInfo = DecInfo & { type: 'callback_menu', menuId: string, buttonId: string }
+export type CallbackQueryInfo = DecInfo & { type: 'callback_query' }
 
-export type InitInfo = CommandInfo | ActionInfo | HelpInfo | StartInfo | HearsInfo | MenuInfo
+export type InitInfo = CommandInfo | ActionInfo | HelpInfo | StartInfo | HearsInfo | MenuInfo | CallbackQueryInfo
 
 export const SYM_EVENTS = Symbol('@@bot-events')
 export const SYM_CONTEXT = Symbol('@@bot-context')
@@ -17,6 +18,7 @@ export const SYM_STATE = Symbol('@@bot-state')
 export const SYM_ONCE = Symbol('@@once')
 export const SYM_PROMISE_REPLACE = Symbol('@@replace')
 export const SYM_HEAR_EXEC_COUNTS = Symbol('@@bot-hears-counts')
+export const SYM_CBHANDLER_FUNCTION = Symbol('@@bot-callback-handler')
 export const INIT_MAP: WeakMap<IBot, InitInfo[]> = new WeakMap()
 
 /**
