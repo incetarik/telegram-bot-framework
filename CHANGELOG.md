@@ -1,3 +1,30 @@
+# 2.1.4
+## Added
+- `inlineMenu(layout)` to show user a menu with `yield` keyword in async
+generator functions. You can set `onPress` actions and
+[more](https://github.com/incetarik/telegram-inline-menu)
+- `inlineOptions(sourceOrOptions, templateOrOptions)` to show an inline menu
+with an array to use it as the source for the buttons supporting the navigation
+and reactions, such as selecting an item. Check examples for more.
+- `callbackQueryFunction: string` to `IBotSettings` so that you can specify
+the function name for the `callback_query` of the Telegram message. By default
+this will be `onCallbackQuery`. If you have this function defined in your class
+you will be able to get your callback queries from that function.
+- `skipHandledCallbackQueries: boolean` to `IBotSettings` to determine whether
+the callback queries which are handled internally should still be sent to
+`callbackQueryFunction` of the class or not. These internally handled queries
+includes such as inline menus shown by the library itself. This is `true` by
+default so that you would get the callback queries only if it is not from the
+library itself.
+
+## Fixed
+- Double calls when the function is not async nor generator.
+- Unexpected behaviour when the `hears` might catch commands
+(starting with `/`). Since, it might be intentional, an option is added to
+`hears` options, called `ignoreCommands` which is `false` by default. Set this
+to `true` if you still want `hears` to match the command-like texts.
+
+---
 # 2.1.3
 ## Added
 - `ISetActionMessage` interface for providing types for state updates.

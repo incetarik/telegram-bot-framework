@@ -121,3 +121,4 @@ dist
 !.vscode/extensions.json
 *.code-workspace
 dist/
+external/

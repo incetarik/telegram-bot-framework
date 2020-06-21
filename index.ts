@@ -11,6 +11,8 @@ export {
   makeImageObject as image,
   makeUpdateActionObject as updateAction,
   makeUpdateStatusObject as updateStatus,
+  inlineMenu,
+  inlineOptions,
 } from './common'
 
 export { IBotSettings } from './create-bot'
