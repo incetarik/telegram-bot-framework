@@ -1,6 +1,6 @@
 export { handleActions, handleCommands, handleHears } from './executer'
 export { inlineMenu, isInlineMenu } from './inline-menu'
-export { inlineOptions } from './inline-options'
+export { inlineOptions, IInlineOptionsInformation } from './inline-options'
 export { IInputOpts, isInputOptions, makeInputObject } from './input-opts'
 export { INotificationInfo, isNotificationInfo, makeNotification } from './notify-users'
 export {

@@ -614,9 +614,38 @@ export function inlineOptions<T>(
   return { inlineMenu: builder, closeOnTimeout, timeoutMessage, onSelected }
 }
 
-interface IInlineOptionsInformation {
+export interface IInlineOptionsInformation {
+  /**
+   * The inline menu.
+   *
+   * @type {*}
+   * @memberof IInlineOptionsInformation
+   */
   inlineMenu: any,
+
+  /**
+   * Indicates whether the menu should be closed on timeout or not.
+   *
+   * @type {boolean}
+   * @memberof IInlineOptionsInformation
+   */
   closeOnTimeout?: boolean
+
+  /**
+   * The message to be sent when timeout occurs.
+   *
+   * @type {string}
+   * @memberof IInlineOptionsInformation
+   */
   timeoutMessage?: string
+
+  /**
+   * A function to be executed when an item is selected.
+   *
+   * Setting this will make the generator NON-BLOCKING.
+   *
+   * @type {Function}
+   * @memberof IInlineOptionsInformation
+   */
   onSelected?: Function
 }

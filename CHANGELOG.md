@@ -1,3 +1,9 @@
+# 2.1.5
+## Fixed
+- TypeScript was giving an error when the `IInlineOptionsInformation` is tried
+to be used inside of the class.
+
+---
 # 2.1.4
 ## Added
 - `inlineMenu(layout)` to show user a menu with `yield` keyword in async

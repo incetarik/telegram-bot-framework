@@ -6,6 +6,7 @@ export {
   INotificationInfo,
   IReplyMessage,
   IImageReplyMessage,
+  IInlineOptionsInformation,
   makeNotification as notify,
   makeInputObject as input,
   makeImageObject as image,
