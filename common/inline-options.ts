@@ -314,7 +314,7 @@ interface IInlineOptionOpts<T = any> {
  * @param {string} template The template of the message.
  * @returns {IInlineOptionsInformation} The inline options information object.
  */
-export function inlineOptions<T>(list: T[], template: string): IInlineOptionsInformation;
+export function inlineOptions<T>(list: T[], template: string): IInlineOptionsInformation<T>;
 
 /**
  * Creates an inline option information object to send user an inline menu
@@ -335,7 +335,7 @@ export function inlineOptions<T>(list: T[], template: string): IInlineOptionsInf
  * @param {IInlineOptionOpts<T>} options The template of the message.
  * @returns {IInlineOptionsInformation} The inline options information object.
  */
-export function inlineOptions<T>(list: T[], options: IInlineOptionOpts<T>): IInlineOptionsInformation;
+export function inlineOptions<T>(list: T[], options: IInlineOptionOpts<T>): IInlineOptionsInformation<T>;
 
 /**
  * Creates an inline option information object to send user an inline menu
@@ -352,12 +352,12 @@ export function inlineOptions<T>(list: T[], options: IInlineOptionOpts<T>): IInl
  * @param {IInlineOptionOpts<T>} options The options of the menu and the source.
  * @returns {IInlineOptionsInformation} The inline options information object.
  */
-export function inlineOptions<T>(options: IInlineOptionOpts<T>): IInlineOptionsInformation;
+export function inlineOptions<T>(options: IInlineOptionOpts<T>): IInlineOptionsInformation<T>;
 
 export function inlineOptions<T>(
   list: (T[]) | IInlineOptionOpts<T>,
   optsOrTemplate?: string | IInlineOptionOpts<T>
-): IInlineOptionsInformation {
+): IInlineOptionsInformation<T> {
 
   let opts: IInlineOptionOpts<T> | undefined
   if (typeof optsOrTemplate === 'string') {
@@ -614,14 +614,14 @@ export function inlineOptions<T>(
   return { inlineMenu: builder, closeOnTimeout, timeoutMessage, onSelected }
 }
 
-export interface IInlineOptionsInformation {
+export interface IInlineOptionsInformation<T = any> {
   /**
    * The inline menu.
    *
    * @type {*}
    * @memberof IInlineOptionsInformation
    */
-  inlineMenu: any,
+  inlineMenu(resolver: Func<T>, reject: (e: Error) => void): () => Promise<IMenu | undefined>,
 
   /**
    * Indicates whether the menu should be closed on timeout or not.
