@@ -789,7 +789,7 @@ class Executer {
   }
 
   async notifyUsers(name: string, type: 'action' | 'command' | 'hears', messageObj: INotificationInfo, ctx: ContextMessageUpdate): Promise<boolean | Error | (boolean | Error)[] | undefined> {
-    const { format, notify, extra } = messageObj
+    const { template, notify, extra } = messageObj
     const { username, id } = ctx.from!
     const now = new Date()
     const epoch = ~~(now.getTime() / 1000)
@@ -811,7 +811,7 @@ class Executer {
       n: name,
     }
 
-    const result = compileTemplate(format)(data)
+    const result = compileTemplate(template)(data)
 
     if (typeof notify === 'string' || typeof notify === 'number') {
       try {
