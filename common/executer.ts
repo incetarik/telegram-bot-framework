@@ -50,7 +50,7 @@ class Executer {
     }
     else {
       return genOrPromise
-  }
+    }
   }
 
   async fireOnCommand(instance: IBot, ctx: ContextMessageUpdate, initializer: CommandInfo) {
@@ -371,69 +371,70 @@ class Executer {
     instance[ SYM_CONTEXT ] = ctx
 
     try {
-    if (typeof gen === 'function') {
-      const { parameters = [] } = options
-      gen = gen.apply(instance, parameters)
-    }
-
-    if (!isGenerator(gen)) {
-      const result = await gen
-      return result
-    }
-
-    while (true) {
-      const iterationResult = await gen.next(nextValue)
-      nextValue = undefined
-      const { value, done } = iterationResult
-
-      if (done) {
-        return value ?? nextValue
+      if (typeof gen === 'function') {
+        const { parameters = [] } = options
+        gen = gen.apply(instance, parameters)
       }
 
-      if (typeof value === 'string') {
-        await this.replyMessage({ message: value }, ctx)
-        continue
+      if (!isGenerator(gen)) {
+        const result = await gen
+        return result
       }
-      else if (typeof value === 'number') {
-        await this.replyMessage({ message: value.toString() }, ctx)
-        continue
-      }
-      else if (typeof value !== 'object') { continue }
 
-      if (isInputOptions(value)) {
-        if (this.executingCommand.has(instance)) {
-          this.askedInputInCommand.set(instance, true)
+      while (true) {
+        const iterationResult = await gen.next(nextValue)
+        nextValue = undefined
+        const { value, done } = iterationResult
+
+        if (done) {
+          return value ?? nextValue
         }
 
-          nextValue = await this.askForInput(value, ctx, instance)
-      }
-      else if ('message' in value) {
-        nextValue = await this.replyMessage(value, ctx)
-      }
-      else if (isNotificationInfo(value)) {
-        await this.notifyUsers(options.name!, options.type!, value, ctx)
-        continue
-      }
-      else if (isSetActionMessage(value)) {
-        const { chat } = ctx
-        if (!chat) { continue }
+        if (typeof value === 'string') {
+          await this.replyMessage({ message: value }, ctx)
+          continue
+        }
+        else if (typeof value === 'number') {
+          await this.replyMessage({ message: value.toString() }, ctx)
+          continue
+        }
+        else if (typeof value !== 'object') { continue }
 
-        const { action, wait } = value
-        await new Promise((resolve, reject) => {
-          ctx.telegram.sendChatAction(chat.id, action).catch(reject).then(() => {
-            if (wait) { setTimeout(resolve, 5000) }
-            else {
-              resolve()
-            }
+        if (isInputOptions(value)) {
+          if (this.executingCommand.has(instance)) {
+            this.askedInputInCommand.set(instance, true)
+          }
+
+          nextValue = await this.askForInput(value, ctx, instance)
+        }
+        else if ('message' in value) {
+          nextValue = await this.replyMessage(value, ctx)
+        }
+        else if (isNotificationInfo(value)) {
+          await this.notifyUsers(options.name!, options.type!, value, ctx)
+          continue
+        }
+        else if (isSetActionMessage(value)) {
+          const { chat } = ctx
+          if (!chat) { continue }
+
+          const { action, wait } = value
+          await new Promise((resolve, reject) => {
+            ctx.telegram.sendChatAction(chat.id, action).catch(reject).then(() => {
+              if (wait) { setTimeout(resolve, 5000) }
+              else {
+                resolve()
+              }
+            })
           })
-        })
-      }
+        }
         else if (isInlineMenu(value)) {
           let {
             inlineMenu: im,
             closeOnTimeout,
             timeoutMessage = '',
             onSelected,
+            extra,
           } = value
 
           let resolver: Function | undefined
@@ -487,7 +488,7 @@ class Executer {
               im = await inlineMenu(im as IMenu)
 
               try {
-                const sentMessage = await CBHandler.showMenu(ctx, im)
+                const sentMessage = await CBHandler.showMenu(ctx, im, extra)
                 if (typeof sentMessage === 'object') {
                   menuMessage = sentMessage
                 }
@@ -532,11 +533,11 @@ class Executer {
           return SYM_PROMISE_REPLACE
         }
 
-      if (typeof nextValue === 'string' && nextValue.startsWith('/')) {
-        return
+        if (typeof nextValue === 'string' && nextValue.startsWith('/')) {
+          return
+        }
       }
     }
-  }
     catch (error) {
       const { catchFunction = 'onError', printStackTrace = true } = this.botSettings
       if (catchFunction in instance) {
@@ -564,8 +565,8 @@ class Executer {
       //@ts-ignore
       const lastMessage = await this.replyMessage(inputObj, ctx)
       if (typeof lastMessage === 'object') {
-      await didMessageSend?.(lastMessage)
-    }
+        await didMessageSend?.(lastMessage)
+      }
     }
 
     do {
@@ -575,8 +576,8 @@ class Executer {
         //@ts-ignore
         const lastMessage = await this.replyMessage(inputObj, ctx)
         if (typeof lastMessage === 'object') {
-        await didMessageSend?.(lastMessage)
-      }
+          await didMessageSend?.(lastMessage)
+        }
       }
 
       let userMessage: IncomingMessage

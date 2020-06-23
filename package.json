@@ -1,6 +1,6 @@
 {
   "name": "@incetarik/telegram-bot-framework",
-  "version": "2.1.5",
+  "version": "2.1.6",
   "description": "A bot framework for Telegram utilizing Telegraf library.",
   "main": "dist/index.js",
   "scripts": {
@@ -31,7 +31,7 @@
     "dotenv": "8.2.0",
     "rxjs": "6.5.5",
     "handlebars": "4.7.6",
-    "telegram-inline-menu": "0.1.5"
+    "telegram-inline-menu": "0.1.7"
   },
   "devDependencies": {
     "@types/dot": "^1.1.3",

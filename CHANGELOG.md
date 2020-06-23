@@ -1,3 +1,8 @@
+# 2.1.7
+## Added
+- `extra` option in yield results and menu builders.
+- Generic parameter to `inlineOptions`.
+
 # 2.1.5
 ## Fixed
 - TypeScript was giving an error when the `IInlineOptionsInformation` is tried

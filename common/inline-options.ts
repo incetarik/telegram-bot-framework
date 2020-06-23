@@ -1,5 +1,6 @@
 import { compile as templateFunction } from 'handlebars'
 import { nanoid } from 'nanoid'
+import { ExtraEditMessage } from 'telegraf/typings/telegram-types'
 import { IMenu } from 'telegram-inline-menu'
 
 type ButtonsTextState = {
@@ -141,6 +142,14 @@ interface IInlineOptionOpts<T = any> {
    * @memberof IInlineOptionOpts
    */
   template?: string | ((opts: IInlineOptionStatus) => string | Promise<string>)
+
+  /**
+   * The extras of the template message.
+   *
+   * @type {ExtraEditMessage}
+   * @memberof IInlineOptionOpts
+   */
+  extra?: ExtraEditMessage
 
   /**
    * The number of buttons to be visible to the user excluding navigation.
@@ -390,6 +399,7 @@ export function inlineOptions<T>(
     menuTimeout,
     timeoutMessage,
     onSelected,
+    extra
   } = opts!
 
   if (pageSize <= 0) {
@@ -611,7 +621,13 @@ export function inlineOptions<T>(
     }
   }
 
-  return { inlineMenu: builder, closeOnTimeout, timeoutMessage, onSelected }
+  return {
+    inlineMenu: builder,
+    closeOnTimeout,
+    timeoutMessage,
+    onSelected,
+    extra,
+  }
 }
 
 export interface IInlineOptionsInformation<T = any> {
@@ -648,4 +664,12 @@ export interface IInlineOptionsInformation<T = any> {
    * @memberof IInlineOptionsInformation
    */
   onSelected?: Function
+
+  /**
+   * The extras of the template message.
+   *
+   * @type {ExtraEditMessage}
+   * @memberof IInlineOptionsInformation
+   */
+  extra?: ExtraEditMessage
 }

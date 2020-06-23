@@ -1,3 +1,4 @@
+import { ExtraEditMessage } from 'telegraf/typings/telegram-types'
 import { IMenu, MenuBuilder } from 'telegram-inline-menu'
 
 export const SYM_DYNAMIC_INLINE_MENU = Symbol('@@dynamic-inline-menu')
@@ -50,4 +51,5 @@ export interface IInlineMenuInfo {
   closeOnTimeout?: boolean
   timeoutMessage?: string
   onSelected?: Function
+  extra?: ExtraEditMessage
 }
