@@ -26,7 +26,23 @@ export interface IReplyMessage<TMessage = string, TExtra = ExtraEditMessage> {
   extra?: TExtra
 }
 
-export interface ISetActionMessage { action: ChatAction, wait?: boolean }
+export interface ISetActionMessage {
+  /**
+   * The action to update the Telegram chat status.
+   *
+   * @type {ChatAction}
+   * @memberof ISetActionMessage
+   */
+  action: ChatAction
+
+  /**
+   * Indicates whether the generator should wait for 5 seconds or not.
+   *
+   * @type {boolean}
+   * @memberof ISetActionMessage
+   */
+  wait?: boolean
+}
 
 export interface IImageReplyMessage extends IReplyMessage<
   {
