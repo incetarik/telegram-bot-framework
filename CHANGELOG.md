@@ -1,4 +1,4 @@
-# 2.1.7
+# 2.2.0
 ## Added
 - `extra` option in yield results and menu builders.
 - Generic parameter to `inlineOptions`.
