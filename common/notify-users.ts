@@ -46,7 +46,7 @@ export interface INotificationInfo {
 
 export function isNotificationInfo(obj: any): obj is INotificationInfo {
   if (typeof obj !== 'object') { return false }
-  if (typeof obj.format !== 'string') { return false }
+  if (typeof obj.template !== 'string') { return false }
   if (typeof obj.notify === 'string') { return true }
   if (typeof obj.notify === 'number') { return true }
   if (Array.isArray(obj.notify)) { return true }

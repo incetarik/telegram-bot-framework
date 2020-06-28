@@ -1,3 +1,7 @@
+# 2.2.1
+## Fixed
+- `isNotificationInfo` function is returning `false` on valid input.
+
 # 2.2.0
 ## Added
 - `extra` option in yield results and menu builders.

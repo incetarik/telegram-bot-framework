@@ -1,6 +1,5 @@
 {
-  "name": "@incetarik/telegram-bot-framework",
-  "version": "2.2.0",
+  "version": "2.2.1",
   "description": "A bot framework for Telegram utilizing Telegraf library.",
   "main": "dist/index.js",
   "scripts": {
