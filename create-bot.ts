@@ -103,11 +103,17 @@ export interface IBotSettings extends TelegrafOptions {
    * @memberof IBotSettings
    */
   printStackTrace?: boolean
+
+  /**
+   * The token of the bot or a getter function for token.
+   *
+   * @memberof IBotSettings
+   */
+  token?: string | Func<string>
 }
 
-export function createBot(opts: IBotSettings) {
-  initEnvironment()
-  const bot = new Telegraf(process.env[ opts.tokenEnvName || 'BOT_TOKEN' ] as string, opts)
+function _createBot(token: string, opts: IBotSettings) {
+  const bot = new Telegraf(token, opts)
 
   bot.use((ctx, next) => {
     if (!ctx.message) { next!(); return }
@@ -118,4 +124,37 @@ export function createBot(opts: IBotSettings) {
   })
 
   return bot
+}
+
+/**
+ * Creates a bot with given parameters.
+ *
+ * @export
+ * @param {IBotSettings} opts Options for the bot.
+ * @returns The Telegraf instance.
+ *
+ */
+export function createBot(opts: IBotSettings) {
+  initEnvironment()
+  let { token, tokenEnvName = 'BOT_TOKEN' } = opts
+
+  if (typeof token === 'function') {
+    const result = token()
+    if (typeof result === 'string') {
+      token = result
+    }
+  }
+  else if (typeof token === 'string') {
+    return _createBot(token, opts)
+  }
+
+  if (typeof token !== 'string') {
+    token = process.env[ tokenEnvName ] as string
+  }
+
+  if (typeof token !== 'string') {
+    throw new Error(`The type of the "token" was not string: "${typeof token}"`)
+  }
+
+  return _createBot(token, opts)
 }
