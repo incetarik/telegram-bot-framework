@@ -1,3 +1,13 @@
+# 2.3.0
+## Added
+- `token` property to `IBotSettings`. Now the token could be passed in options
+object for the `bot` decorator function. The `token` could be a function too.
+- `templateSource` property for `notify` function and `inlineOptions` functions
+to provide extra template source other than default provided ones.
+
+## Changed
+- `didMessageSend` of `input` may not be an async function any more.
+
 # 2.2.1
 ## Fixed
 - `isNotificationInfo` function is returning `false` on valid input.
