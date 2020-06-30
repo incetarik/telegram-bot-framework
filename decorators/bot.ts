@@ -442,7 +442,7 @@ export interface IBot {
    *  ])),
    *  edit: this._messageToUpdate,
    *  cancelPrevious: true,
-   *  didMessageSend: async message => { this._messageToUpdate = message }
+   *  didMessageSend: message => { this._messageToUpdate = message }
    * })
    *
    * if (this.isCancelled(selection)) {

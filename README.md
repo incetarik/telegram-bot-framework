@@ -168,7 +168,7 @@ const selection = await this.input$({
   match: /^(next|prev|cancel|\d\d?)$/i,
   matchError: 'Please enter "next", "prev", "cancel" or a number',
   cancelPrevious: true,
-  didMessageSend: async (message) => { this._messageToUpdate = message },
+  didMessageSend: message => this._messageToUpdate = message,
 })
 
 if (this.isCancelled(selection)) {

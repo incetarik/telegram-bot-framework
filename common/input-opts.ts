@@ -115,10 +115,10 @@ export interface IInputOpts {
    * In that way, you will be able to replace the previous message.
    *
    * @param {Message} message The message sent to the user.
-   * @returns {Promise<void>} Promise function.
+   * @returns {any | Promise<any>} Promise function.
    * @memberof IInputOpts
    */
-  didMessageSend?(message: Message): Promise<void>
+  didMessageSend?(message: Message): any | Promise<any>
 }
 
 export function isInputOptions(opts: any): opts is IInputOpts {
@@ -140,7 +140,7 @@ export function isInputOptions(opts: any): opts is IInputOpts {
  * @param {boolean} [cancelPrevious] Indicates whether the previous message
  * should be cancelled.
  *
- * @param {(message: Message) => Promise<void>} [didMessageSend] A handler
+ * @param {(message: Message) => any | Promise<any>} [didMessageSend] A handler
  * to receive previously sent message to keep it to pass it as edit message
  * later again.
  *
@@ -151,7 +151,7 @@ export function isInputOptions(opts: any): opts is IInputOpts {
  *
  * @returns {IInputOpts} An input options object.
  */
-export function makeInputObject(input: string, match?: string | RegExp, matchError?: string, matchErrorExtra?: ExtraEditMessage, edit?: Message, extra?: ExtraEditMessage, cancelPrevious?: boolean, didMessageSend?: (message: Message) => Promise<void>, retry?: number, timeout?: number, keepAsking?: boolean): IInputOpts
+export function makeInputObject(input: string, match?: string | RegExp, matchError?: string, matchErrorExtra?: ExtraEditMessage, edit?: Message, extra?: ExtraEditMessage, cancelPrevious?: boolean, didMessageSend?: ((message: Message) => any | Promise<any>), retry?: number, timeout?: number, keepAsking?: boolean): IInputOpts
 
 /**
  * Creates an input object to yield.
@@ -162,7 +162,7 @@ export function makeInputObject(input: string, match?: string | RegExp, matchErr
  */
 export function makeInputObject(input: IInputOpts): IInputOpts
 
-export function makeInputObject(input: IInputOpts | string, match?: string | RegExp, matchError?: string, matchErrorExtra?: ExtraEditMessage, edit?: Message, extra?: ExtraEditMessage, cancelPrevious?: boolean, didMessageSend?: (message: Message) => Promise<void>, retry?: number, timeout?: number, keepAsking?: boolean): IInputOpts {
+export function makeInputObject(input: IInputOpts | string, match?: string | RegExp, matchError?: string, matchErrorExtra?: ExtraEditMessage, edit?: Message, extra?: ExtraEditMessage, cancelPrevious?: boolean, didMessageSend?: ((message: Message) => any | Promise<any>), retry?: number, timeout?: number, keepAsking?: boolean): IInputOpts {
   if (isInputOptions(input)) {
     return input
   }
