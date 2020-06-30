@@ -795,6 +795,11 @@ class Executer {
     const now = new Date()
     const epoch = ~~(now.getTime() / 1000)
 
+    let { templateSource } = messageObj
+    if (typeof templateSource !== 'object') {
+      templateSource = {}
+    }
+
     const data = {
       id,
       username,
@@ -810,6 +815,7 @@ class Executer {
       e: epoch,
       t: type,
       n: name,
+      ...templateSource,
     }
 
     const result = compileTemplate(template)(data)

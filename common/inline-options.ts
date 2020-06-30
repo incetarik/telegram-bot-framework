@@ -144,6 +144,14 @@ interface IInlineOptionOpts<T = any> {
   template?: string | ((opts: IInlineOptionStatus) => string | Promise<string>)
 
   /**
+  * The additional object to be used as a source for template.
+  *
+  * @type {object}
+  * @memberof INotificationInfo
+  */
+  templateSource?: object
+
+  /**
    * The extras of the template message.
    *
    * @type {ExtraEditMessage}
@@ -418,7 +426,8 @@ export function inlineOptions<T>(
     template: _template = 'Choose option',
     nextButtonText: nextText = '➡️',
     prevButtonText: prevText = '⬅️',
-    closeButtonText: closeText = '❌'
+    closeButtonText: closeText = '❌',
+    templateSource,
   } = opts!
 
   if (typeof _template === 'string') {
@@ -439,6 +448,10 @@ export function inlineOptions<T>(
   const { length: itemCount } = opts.list!
   const pageCount = Math.ceil(itemCount / pageSize)
 
+  if (typeof templateSource !== 'object') {
+    templateSource = {}
+  }
+
   let status: IInlineOptionStatus = {
     nextButtonText: nextText,
     prevButtonText: prevText,
@@ -456,6 +469,7 @@ export function inlineOptions<T>(
 
     toIndex: pageSize,
     to: Math.min(pageSize, itemCount),
+    ...templateSource,
   }
 
   const prevId = nanoid(8)

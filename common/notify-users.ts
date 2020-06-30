@@ -27,6 +27,14 @@ export interface INotificationInfo {
   template: string
 
   /**
+   * The additional object to be used as a source for template.
+   *
+   * @type {object}
+   * @memberof INotificationInfo
+   */
+  templateSource?: object
+
+  /**
    * The user(s) to be notified. This could be both the user id, or username,
    * or mix of these two.
    *
