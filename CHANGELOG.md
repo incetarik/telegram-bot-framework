@@ -1,3 +1,11 @@
+# 2.3.1
+## Added
+- `edit: true | Message | number` property to yield object so that you can
+update the last message (or any message with id or itself). For example, to
+update the last message you could do `yield { message: 'Updated', edit: true }`.
+If you want to update nth message, you could do
+`yield { message: 'Hi, this is updated message content of 5.', edit: 5 }`.
+
 # 2.3.0
 ## Added
 - `token` property to `IBotSettings`. Now the token could be passed in options

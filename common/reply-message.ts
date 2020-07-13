@@ -1,5 +1,5 @@
 import {
-  ChatAction, ExtraEditMessage, ExtraMediaGroup, ExtraPhoto
+  ChatAction, ExtraEditMessage, ExtraMediaGroup, ExtraPhoto, Message
 } from 'telegraf/typings/telegram-types'
 
 /**
@@ -24,6 +24,15 @@ export interface IReplyMessage<TMessage = string, TExtra = ExtraEditMessage> {
    * @memberof IReplyMessage
    */
   extra?: TExtra
+
+  /**
+   * Indicates whether the last message sent by the bot should be edited or
+   * the message itself to be edited, or the ID of the message to edit.
+   *
+   * @type {(true | Message | number)}
+   * @memberof IReplyMessage
+   */
+  edit?: true | Message | number
 }
 
 export interface ISetActionMessage {

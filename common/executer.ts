@@ -4,7 +4,7 @@ import { join } from 'path'
 import { ContextMessageUpdate, Extra, Markup } from 'telegraf'
 import {
   ExtraEditMessage, ExtraPhoto, IncomingMessage, InputFile, Message,
-  MessageMedia, User
+  MessageMedia, MessagePhoto, User
 } from 'telegraf/typings/telegram-types'
 import { CBHandler, IMenu, inlineMenu } from 'telegram-inline-menu'
 
@@ -12,8 +12,8 @@ import { IBotSettings } from '../create-bot'
 import { IBot } from '../decorators'
 import {
   ActionInfo, CommandInfo, HearsInfo, InitInfo, isGenerator, isPromise,
-  MenuInfo, SYM_CONTEXT, SYM_EVENTS, SYM_HEAR_EXEC_COUNTS, SYM_ONCE,
-  SYM_PROMISE_REPLACE, SYM_STATE, SYM_CBHANDLER_FUNCTION
+  MenuInfo, SYM_CBHANDLER_FUNCTION, SYM_CONTEXT, SYM_EVENTS,
+  SYM_HEAR_EXEC_COUNTS, SYM_ONCE, SYM_PROMISE_REPLACE, SYM_STATE
 } from '../decorators/common'
 import { _ } from '../translations'
 import { isInlineMenu } from './inline-menu'
@@ -38,6 +38,7 @@ class Executer {
   private executingHear: WeakMap<IBot, HearsInfo & { generator?: AsyncGenerator }> = new WeakMap()
   private onceExecutions: WeakMap<IBot, Dictionary<number | boolean>> = new WeakMap()
   private botSettings!: IBotSettings
+  private lastMessageSent?: Message
 
   async fireGeneric(instance: IBot, ctx: ContextMessageUpdate, initializer: InitInfo) {
     const genOrPromise = initializer.handler.call(instance, ctx)
@@ -391,11 +392,19 @@ class Executer {
         }
 
         if (typeof value === 'string') {
-          await this.replyMessage({ message: value }, ctx)
+          const msg = await this.replyMessage({ message: value }, ctx)
+          if (typeof msg === 'object') {
+            this.lastMessageSent = msg
+          }
+
           continue
         }
         else if (typeof value === 'number') {
-          await this.replyMessage({ message: value.toString() }, ctx)
+          const msg = await this.replyMessage({ message: value.toString() }, ctx)
+          if (typeof msg === 'object') {
+            this.lastMessageSent = msg
+          }
+
           continue
         }
         else if (typeof value !== 'object') { continue }
@@ -407,7 +416,7 @@ class Executer {
 
           nextValue = await this.askForInput(value, ctx, instance)
         }
-        else if ('message' in value) {
+        else if ('message' in value || typeof value.edit === 'string') {
           nextValue = await this.replyMessage(value, ctx)
         }
         else if (isNotificationInfo(value)) {
@@ -420,12 +429,15 @@ class Executer {
 
           const { action, wait } = value
           await new Promise((resolve, reject) => {
-            ctx.telegram.sendChatAction(chat.id, action).catch(reject).then(() => {
-              if (wait) { setTimeout(resolve, 5000) }
-              else {
-                resolve()
-              }
-            })
+            ctx.telegram
+              .sendChatAction(chat.id, action)
+              .catch(reject)
+              .then(() => {
+                if (wait) { setTimeout(resolve, 5000) }
+                else {
+                  resolve()
+                }
+              })
           })
         }
         else if (isInlineMenu(value)) {
@@ -469,6 +481,7 @@ class Executer {
             })
           }
 
+          let that = this
           let menuMessage: Message | undefined
           try {
             nextValue = await new Promise(async function inlineMenuHandler(resolve, reject) {
@@ -491,6 +504,7 @@ class Executer {
                 const sentMessage = await CBHandler.showMenu(ctx, im, extra)
                 if (typeof sentMessage === 'object') {
                   menuMessage = sentMessage
+                  that.lastMessageSent = menuMessage
                 }
 
                 if (willResolveManually) {
@@ -517,10 +531,22 @@ class Executer {
                   const { chat, message_id } = menuMessage
 
                   if (timeoutMessage) {
-                    await ctx.telegram.editMessageText(chat.id, message_id, undefined, timeoutMessage, Extra.markup(Markup.inlineKeyboard([])))
+                    const result = await ctx.telegram.editMessageText(
+                      chat.id,
+                      message_id,
+                      undefined,
+                      timeoutMessage,
+                      Extra.markup(Markup.inlineKeyboard([]))
+                    )
+
+                    if (typeof result === 'object') {
+                      this.lastMessageSent = result
+                    }
                   }
                   else {
-                    await ctx.deleteMessage(message_id)
+                    if (await ctx.deleteMessage(message_id)) {
+                      this.lastMessageSent = undefined
+                    }
                   }
 
                   nextValue = undefined
@@ -639,23 +665,77 @@ class Executer {
   }
 
   async replyMessage(messageObj: IReplyMessage, ctx: ContextMessageUpdate): Promise<Message | undefined | boolean> {
-    const {
+    let {
       //@ts-ignore
       input,
-      //@ts-ignore
       edit,
 
       message = input,
       extra,
     } = messageObj
 
+    if (typeof message !== 'object' && message) {
+      message = String(message)
+    }
+
+    if (typeof edit === 'string') {
+      if (typeof message === 'undefined') {
+        message = edit
+        edit = true
+      }
+    }
+
     if (typeof message === 'string') {
       if (edit) {
-        if ((edit as Message).text === message) {
-          return false
+        let editMessageId: number
+        if (typeof edit === 'object') {
+          if (edit.text === message) {
+            return false
+          }
+
+          editMessageId = edit.message_id
+        }
+        else if (typeof edit === 'string' || typeof edit === 'number') {
+          editMessageId = Number(edit)
+        }
+        else if (typeof edit === 'boolean') {
+          let value: Message | boolean | undefined
+          try {
+            value = await ctx.editMessageText(message, extra)
+          }
+          catch (error) {
+            if (typeof this.lastMessageSent === 'object') {
+              if (error.message === 'Telegraf: "editMessageText" isn\'t available for "message::text"') {
+                value = await ctx.telegram.editMessageText(
+                  ctx.chat?.id,
+                  this.lastMessageSent?.message_id,
+                  undefined,
+                  message,
+                  extra
+                )
+              }
+              else {
+                throw error
+              }
+            }
+            else {
+              throw error
+            }
+          }
+
+          return value
+        }
+        else {
+          throw new Error(`The given "edit" property was invalid: ${String(edit)}`)
         }
 
-        return await ctx.telegram.editMessageText(ctx.chat?.id, edit.message_id, undefined, message, extra)
+        return await ctx.telegram.editMessageText(
+          ctx.chat?.id,
+          editMessageId,
+          undefined,
+          message,
+          extra
+        )
       }
       else {
         return await ctx.reply(message, extra)
@@ -769,16 +849,18 @@ class Executer {
           await ctx.replyWithMediaGroup(currentGroup, extra as any)
         }
 
+        let returnValue: MessagePhoto | undefined
         if (mediaGallery.length) {
           const [ photo ] = mediaGallery
           if (photo.caption && photo.caption !== photoExtra.caption) {
             photoExtra.caption = photo.caption
           }
 
-          await ctx.replyWithPhoto({ source: photo.media }, photoExtra)
+          returnValue = await ctx.replyWithPhoto({ source: photo.media }, photoExtra)
         }
 
         if (timerId) { clearTimeout(timerId) }
+        return returnValue
       }
       else {
         throw new Error(`Invalid type for image source: "${typeof source}"`)
