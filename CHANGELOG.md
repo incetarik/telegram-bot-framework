@@ -5,6 +5,13 @@ update the last message (or any message with id or itself). For example, to
 update the last message you could do `yield { message: 'Updated', edit: true }`.
 If you want to update nth message, you could do
 `yield { message: 'Hi, this is updated message content of 5.', edit: 5 }`.
+- `getLastMessage: true` property to yield object to get the last sent message.
+So another way to update the last message could be like:
+```ts
+yield 'Content'
+const { message_id } = yield { getLastMessage: true }
+yield { edit: message_id, message: 'Updated content' }
+```
 
 # 2.3.0
 ## Added

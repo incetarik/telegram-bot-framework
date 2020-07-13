@@ -555,6 +555,9 @@ class Executer {
             }
           }
         }
+        else if (value.getLastMessage === true) {
+          nextValue = this.lastMessageSent
+        }
         else if (nextValue === SYM_PROMISE_REPLACE) {
           return SYM_PROMISE_REPLACE
         }
