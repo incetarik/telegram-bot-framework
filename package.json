@@ -30,7 +30,7 @@
     "nanoid": "3.3.8",
     "dotenv": "8.2.0",
     "rxjs": "6.5.5",
-    "handlebars": "4.7.6",
+    "handlebars": "4.7.7",
     "telegram-inline-menu": "0.1.8"
   },
   "devDependencies": {
